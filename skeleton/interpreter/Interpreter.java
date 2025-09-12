@@ -74,7 +74,7 @@ public class Interpreter {
             ex.printStackTrace();
             Interpreter.fatalError("Uncaught parsing error: " + ex, Interpreter.EXIT_PARSING_ERROR);
         }
-        //astRoot.println(System.out);
+        astRoot.println(System.out);
         interpreter = new Interpreter(astRoot);
         interpreter.initMemoryManager(gcType, heapBytes);
         String returnValueAsString = interpreter.executeRoot(astRoot, quandaryArg).toString();
@@ -113,9 +113,13 @@ public class Interpreter {
             switch (binaryExpr.getOperator()) {
                 case BinaryExpr.PLUS: return (Long)evaluate(binaryExpr.getLeftExpr()) + (Long)evaluate(binaryExpr.getRightExpr());
                 case BinaryExpr.MINUS: return (Long)evaluate(binaryExpr.getLeftExpr()) - (Long)evaluate(binaryExpr.getRightExpr());
+                case BinaryExpr.MULT: return (Long)evaluate(binaryExpr.getLeftExpr()) * (Long)evaluate(binaryExpr.getRightExpr());
                 default: throw new RuntimeException("Unhandled operator");
             }
-        } else {
+        } else if (expr instanceof UnaryMinus){
+            UnaryMinus unaryMinus= (UnaryMinus)expr;
+            return -(Long)evaluate(unaryMinus.getExpr());
+        }else {
             throw new RuntimeException("Unhandled Expr type");
         }
     }
