@@ -49,8 +49,6 @@ expr ::= INTCONST:c
       | MINUS expr:e
       {: RESULT = new UnaryMinus(e, loc(eleft, eright)); :}
       %prec UMINUS
-      | RETURN expr: e
-      {:RESULT = e; :}
        | binaryExpr:e
          {: RESULT = e; :}
       |  LPAREN expr:e RPAREN
