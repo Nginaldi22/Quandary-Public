@@ -29,7 +29,7 @@ run_test() {
 # Q1
 run_test ./q1/test1.q
 run_test ./q1/test2.q
-run_test ./q1/test3.q
+run_test ./q1/test3.q #FAIL
 run_test ./q1/test4.q
 
 # Q2
@@ -48,7 +48,7 @@ run_test ./q3/test4.q
 run_test ./q4/test1.q
 run_test ./q4/test2.q
 run_test ./q4/test3.q
-run_test ./q4/test4.q
+run_test ./q4/test4.q  #FAIL
 
 # Q5
 run_test ./q5/test1.q
