@@ -1,6 +1,6 @@
 
 int isList(Q list){
-    if(isNil(list)==1 || !isAtom(list)==1){
+    if((isNil(list)==1 || !isAtom(list)==1)){
         return 1;
     }
     return 0;
@@ -33,7 +33,7 @@ int isSorted(Ref list){
     if(isNil(list)==1 || isNil((Ref)right(list))==1){
         return 1;
     }
-    if(length((Ref)left(list),0)<=length((Ref)right(list),0)){
+    if(length((Ref)left(list),0)<=length((Ref)left((Ref)right(list)),0)){
         return isSorted((Ref)right(list));
     }
     return 0;
