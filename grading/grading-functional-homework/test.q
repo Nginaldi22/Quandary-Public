@@ -1,12 +1,12 @@
 
-int isList(Q x) {
-    if (isNil(x)==1) {
+int isList(Q list) {
+    if (isNil(list)==1) {
         return 1;                 
     }
-    if (isAtom(x)==1) {
+    if (isAtom(list)==1) {
         return 0;                 
     }
-    return isList(right((Ref)x));
+    return isList(right((Ref)list));
 }
 
 Ref append(Ref list1, Ref list2){
