@@ -27,8 +27,9 @@ parser code {:
 
 :};
 
-terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON;
+terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT;
 terminal Long    INTCONST;
+terminal String IDENT;
 terminal  UMINUS;
 non terminal Program         program;
 non terminal Expr            expr;
@@ -40,7 +41,7 @@ precedence left UMINUS;
 
 start with program;
 
-program ::= RETURN expr:e SEMI_COLON
+program ::= INT IDENT LPAREN INT IDENT :paramName RPAREN LEFT_CURL RETURN expr:e SEMI_COLON RIGHT_CURL
             {: RESULT = new Program(e, loc(eleft, eright)); :}
          ;
 
