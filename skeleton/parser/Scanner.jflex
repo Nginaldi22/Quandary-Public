@@ -49,6 +49,7 @@ import interpreter.Interpreter;
 
 
 IntLiteral = 0 | [1-9][0-9]*
+IDENT = [A-Za-z_][A-Za-z0-9_]*
 
 new_line = \r|\n|\r\n;
 
@@ -70,6 +71,11 @@ white_space = {new_line} | [ \t\f]
 "return"          {return symbol("return", RETURN);}
 ";"          {return symbol(";", SEMI_COLON);}
 "*"          {return symbol("*", MULT);}
+"{"          {return symbol("{", LEFT_CURL);}
+"}"          {return symbol("}", RIGHT_CURL);}
+"int"        {return symbol("int", INT);}
+{IDENT}      {return symbol("IDENT", IDENT, yytext());}
+
 
 /* You shouldn't need to modify anything below this */
 
