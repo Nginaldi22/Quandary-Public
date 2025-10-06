@@ -43,13 +43,13 @@ precedence left UMINUS;
 start with program;
 
 program ::= INT IDENT LPAREN INT IDENT RPAREN LEFT_CURL stmt:s RIGHT_CURL
-            {: RESULT = new Program(s.getExpr(), loc(sleft, sright)); :}
+            {: RESULT = new Program(s, loc(sleft, sright)); :}
          ;
 
 stmt::= PRINT expr:e SEMI_COLON
-  {: RESULT = new Stmt(e, loc(eleft, eright)); :}
+  {: RESULT = new Stmt(e, "p",loc(eleft, eright)); :}
   | RETURN expr:e SEMI_COLON
-  {: RESULT = new Stmt(e, loc(eleft, eright)); :}
+  {: RESULT = new Stmt(e, "r",loc(eleft, eright)); :}
   ;
 
 expr ::= INTCONST:c
