@@ -74,6 +74,7 @@ white_space = {new_line} | [ \t\f]
 "{"          {return symbol("{", LEFT_CURL);}
 "}"          {return symbol("}", RIGHT_CURL);}
 "int"        {return symbol("int", INT);}
+"print"      {return symbol("print", PRINT);}
 {IDENT}      {return symbol("IDENT", IDENT, yytext());}
 
 
