@@ -1,21 +1,20 @@
 package ast;
 
-import java.io.PrintStream;
-
 public class Stmt extends ASTNode {
 
     final Expr expr;
-
-    public Stmt(Expr expr, Location loc) {
+    final String t;
+    public Stmt(Expr expr,String t, Location loc) {
         super(loc);
         this.expr = expr;
+        this.t=t;
     }
 
     public Expr getExpr() {
         return expr;
     }
-
-    public void println(PrintStream ps) {
-        ps.println(expr);
+    public String getType(){
+        return t;
     }
+
 }
