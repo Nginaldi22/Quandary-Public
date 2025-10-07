@@ -102,11 +102,19 @@ public class Interpreter {
     }
 
     Object executeRoot(Program astRoot, long arg) {
-        return executeStmt(astRoot.getstmt());
+        return executeStmtList(astRoot.getstmtList());
+    }
+    Object executeStmtList(StmtList stmtList){
+        Object check = executeStmt(stmtList.getStmt());
+        if(check!=null){
+            return check;
+        }
+       return  executeStmtList(stmtList.getrest());
     }
     Object executeStmt(Stmt stmt){
         if(stmt.getType()=="p"){
-            System.out.println(stmt.getExpr());
+            System.out.println(evaluate(stmt.getExpr()));
+            return null;
         }
         return evaluate(stmt.getExpr());
     }

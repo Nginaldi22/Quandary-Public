@@ -1,3 +1,4 @@
 int main(int arg){
-    return 100;
+    print 100;
+    return 200;
 }

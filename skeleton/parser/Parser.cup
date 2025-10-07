@@ -35,6 +35,7 @@ non terminal Program         program;
 non terminal Expr            expr;
 non terminal BinaryExpr      binaryExpr;
 non terminal Stmt            stmt;
+non terminal StmtList        stmt_list;
 
 precedence left PLUS, MINUS;
 precedence left MULT;
@@ -42,9 +43,15 @@ precedence left UMINUS;
 
 start with program;
 
-program ::= INT IDENT LPAREN INT IDENT RPAREN LEFT_CURL stmt:s RIGHT_CURL
-            {: RESULT = new Program(s, loc(sleft, sright)); :}
+program ::= INT IDENT LPAREN INT IDENT RPAREN LEFT_CURL stmt_list:slist RIGHT_CURL
+            {: RESULT = new Program(slist, loc(slistleft, slistright)); :}
          ;
+
+stmt_list::= stmt:s stmt_list:slist
+{: RESULT = new StmtList(s,slist,loc(sleft,sright)); :}
+| ""
+{: RESULT = new StmtList("", loc(100,100)); :}
+  ;
 
 stmt::= PRINT expr:e SEMI_COLON
   {: RESULT = new Stmt(e, "p",loc(eleft, eright)); :}
