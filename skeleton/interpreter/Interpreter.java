@@ -112,7 +112,23 @@ public class Interpreter {
        return  executeStmtList(stmtList.getrest());
     }
     Object executeStmt(Stmt stmt){
-        if(stmt.getType()=="p"){
+        if(stmt.getCondition()!=null){
+            Condition cond = stmt.getCondition();
+            switch (cond.getType()){
+                case Condition.LESS_EQUALS:
+                if((long)evaluate(cond.getfirstExpr())<=(long)evaluate(cond.getsecondExpr())){
+                    if(stmt.getType()=="p"){
+                        System.out.println(evaluate(stmt.getExpr()));
+                        return null;
+                    }else{
+                        return evaluate(stmt.getExpr());
+                    }
+                }
+                break;
+
+            }
+        }
+        else if(stmt.getType()=="p"){
             System.out.println(evaluate(stmt.getExpr()));
             return null;
         }

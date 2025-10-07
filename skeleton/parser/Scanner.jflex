@@ -75,6 +75,10 @@ white_space = {new_line} | [ \t\f]
 "}"          {return symbol("}", RIGHT_CURL);}
 "int"        {return symbol("int", INT);}
 "print"      {return symbol("print", PRINT);}
+"if"         {return symbol("if", IF);}
+"else"       {return symbol("else", ELSE);}
+"<"          {return symbol("<", LESS);}
+"="          {return symbol("=", EQUALS);}
 {IDENT}      {return symbol("IDENT", IDENT, yytext());}
 
 

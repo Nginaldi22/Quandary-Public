@@ -27,7 +27,7 @@ parser code {:
 
 :};
 
-terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT;
+terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LESS,EQUALS;
 terminal Long    INTCONST;
 terminal String IDENT;
 terminal  UMINUS;
@@ -36,6 +36,7 @@ non terminal Expr            expr;
 non terminal BinaryExpr      binaryExpr;
 non terminal Stmt            stmt;
 non terminal StmtList        stmt_list;
+non terminal Condition       cond;
 
 precedence left PLUS, MINUS;
 precedence left MULT;
@@ -54,9 +55,15 @@ stmt_list::= stmt:s stmt_list:slist
   ;
 
 stmt::= PRINT expr:e SEMI_COLON
-  {: RESULT = new Stmt(e, "p",loc(eleft, eright)); :}
+  {: RESULT = new Stmt(e, "p",null,loc(eleft, eright)); :}
   | RETURN expr:e SEMI_COLON
-  {: RESULT = new Stmt(e, "r",loc(eleft, eright)); :}
+  {: RESULT = new Stmt(e, "r",null,loc(eleft, eright)); :}
+  | IF LPAREN cond:c RPAREN stmt: s
+  {: RESULT = new Stmt(s.getExpr(), s.getType(), c, loc(sleft, sright));:}
+  ;
+
+  cond ::= expr: e1 LESS EQUALS expr: e2
+  {:RESULT = new Condition(e1,e2,null,null,Condition.LESS_EQUALS,loc(e2left,e2right)); :}
   ;
 
 expr ::= INTCONST:c
