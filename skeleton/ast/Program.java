@@ -4,18 +4,18 @@ import java.io.PrintStream;
 
 public class Program extends ASTNode {
 
-    final Stmt stmt;
+    final StmtList stmtList;
 
-    public Program(Stmt stmt, Location loc) {
+    public Program(StmtList stmtList, Location loc) {
         super(loc);
-        this.stmt = stmt;
+        this.stmtList = stmtList;
     }
 
-    public Stmt getstmt() {
-        return stmt;
+    public StmtList getstmtList() {
+        return stmtList;
     }
 
     public void println(PrintStream ps) {
-        ps.println(stmt);
+        ps.println(stmtList);
     }
 }
