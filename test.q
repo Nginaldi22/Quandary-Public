@@ -1,5 +1,6 @@
 int main(int arg){
-    if(-1<=1)
-    print 500;
+    print 100;
+    if(1<=1)
+ print 700;
     return 200;
 }

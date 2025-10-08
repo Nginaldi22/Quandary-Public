@@ -54,12 +54,14 @@ stmt_list::= stmt:s stmt_list:slist
 {: RESULT = new StmtList("", loc(100,100)); :}
   ;
 
-stmt::= PRINT expr:e SEMI_COLON
+stmt::= LEFT_CURL stmt_list:slist RIGHT_CURL
+  {:RESULT = new BlockStatement(slist, loc(slistleft,slistright));:}
+|PRINT expr:e SEMI_COLON
   {: RESULT = new Stmt(e, "p",null,loc(eleft, eright)); :}
   | RETURN expr:e SEMI_COLON
   {: RESULT = new Stmt(e, "r",null,loc(eleft, eright)); :}
   | IF LPAREN cond:c RPAREN stmt: s
-  {: RESULT = new Stmt(s.getExpr(), s.getType(), c, loc(sleft, sright));:}
+  {: RESULT = new BlockStatement(s, c, loc(sleft, sright));:}
   ;
 
   cond ::= expr: e1 LESS EQUALS expr: e2
