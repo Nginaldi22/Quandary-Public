@@ -111,29 +111,38 @@ public class Interpreter {
         }
        return  executeStmtList(stmtList.getrest());
     }
+    
+    Object executeBlock(Block b) {
+    if (b == null || b.get_stmt() == null) {
+        return null; 
+    }
+    Object check = executeStmt(b.get_stmt());
+    if (check != null) {
+        return check;
+    }
+    return executeBlock(b.get_next_Block());
+}
+
     Object executeStmt(Stmt stmt){
-        if(stmt.getCondition()!=null){
-            Condition cond = stmt.getCondition();
-            switch (cond.getType()){
+        if(stmt instanceof IfStmt){
+            IfStmt thing = (IfStmt)stmt;
+            Block use =  thing.getBlock();
+            Condition c = thing.getCondition();
+            switch(c.getType()){
                 case Condition.LESS_EQUALS:
-                if((long)evaluate(cond.getfirstExpr())<=(long)evaluate(cond.getsecondExpr())){
-                    if(stmt instanceof BlockStatement && ((BlockStatement) stmt).get_stmtlist()!=null){
-                        BlockStatement block = (BlockStatement)stmt;
-                        System.out.println("Hello");
-                        executeStmtList(block.get_stmtlist());
-                    }
-                    else if(stmt.getType()=="p"){
-                        System.out.println(evaluate(stmt.getExpr()));
-                        return null;
+                if((long)evaluate(c.getfirstExpr())<=(long)evaluate(c.getsecondExpr())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
                     }else{
-                        System.out.println("-------------------------------");
-                        System.out.println(stmt);
-                        System.out.println(stmt.getExpr());
-                        return evaluate(stmt.getExpr());
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
                     }
                 }
-                break;
-
             }
         }
         else if(stmt.getType()=="p"){

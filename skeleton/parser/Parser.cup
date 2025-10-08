@@ -37,7 +37,8 @@ non terminal BinaryExpr      binaryExpr;
 non terminal Stmt            stmt;
 non terminal StmtList        stmt_list;
 non terminal Condition       cond;
-
+non terminal Block           b_list;
+non terminal Block           body;
 precedence left PLUS, MINUS;
 precedence left MULT;
 precedence left UMINUS;
@@ -54,14 +55,25 @@ stmt_list::= stmt:s stmt_list:slist
 {: RESULT = new StmtList("", loc(100,100)); :}
   ;
 
-stmt::= LEFT_CURL stmt_list:slist RIGHT_CURL
-  {:RESULT = new BlockStatement(slist, loc(slistleft,slistright));:}
-|PRINT expr:e SEMI_COLON
-  {: RESULT = new Stmt(e, "p",null,loc(eleft, eright)); :}
+stmt ::=
+    PRINT expr:e SEMI_COLON
+      {: RESULT = new Stmt(e, "p", null, loc(eleft, eright)); :}
   | RETURN expr:e SEMI_COLON
-  {: RESULT = new Stmt(e, "r",null,loc(eleft, eright)); :}
-  | IF LPAREN cond:c RPAREN stmt: s
-  {: RESULT = new BlockStatement(s, c, loc(sleft, sright));:}
+      {: RESULT = new Stmt(e, "r", null, loc(eleft, eright)); :}
+  | IF LPAREN cond:c RPAREN body:b
+      {: RESULT = new IfStmt(b, c, loc(bleft, bright)); :}
+  ;
+
+body ::=stmt:s
+      {: RESULT = new Block(s); :}
+  |  LEFT_CURL b_list:b RIGHT_CURL
+      {: RESULT = b; :}
+  ;
+
+b_list ::= ""
+      {: RESULT = new Block(""); :}
+  | stmt:s b_list:bl
+      {: RESULT = new Block(s, bl); :}
   ;
 
   cond ::= expr: e1 LESS EQUALS expr: e2
