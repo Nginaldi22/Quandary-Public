@@ -117,10 +117,18 @@ public class Interpreter {
             switch (cond.getType()){
                 case Condition.LESS_EQUALS:
                 if((long)evaluate(cond.getfirstExpr())<=(long)evaluate(cond.getsecondExpr())){
-                    if(stmt.getType()=="p"){
+                    if(stmt instanceof BlockStatement && ((BlockStatement) stmt).get_stmtlist()!=null){
+                        BlockStatement block = (BlockStatement)stmt;
+                        System.out.println("Hello");
+                        executeStmtList(block.get_stmtlist());
+                    }
+                    else if(stmt.getType()=="p"){
                         System.out.println(evaluate(stmt.getExpr()));
                         return null;
                     }else{
+                        System.out.println("-------------------------------");
+                        System.out.println(stmt);
+                        System.out.println(stmt.getExpr());
                         return evaluate(stmt.getExpr());
                     }
                 }
