@@ -79,6 +79,10 @@ white_space = {new_line} | [ \t\f]
 "else"       {return symbol("else", ELSE);}
 "<"          {return symbol("<", LESS);}
 "="          {return symbol("=", EQUALS);}
+">"          {return symbol("<", GREATER);}
+"&"          {return symbol("<", AND);}
+"|"          {return symbol("<", OR);}
+"!"          {return symbol("<", NOT);}
 {IDENT}      {return symbol("IDENT", IDENT, yytext());}
 
 

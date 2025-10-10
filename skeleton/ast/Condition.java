@@ -9,6 +9,8 @@ public class Condition extends ASTNode{
     public static final int LESS =6;
     public static final int AND= 7;
     public static final int OR = 8;
+    public static final int NOT_COND = 9;
+    public static final int JUST_COND = 10;
 
     Expr exp1;
     Expr exp2;
