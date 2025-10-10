@@ -1,10 +1,8 @@
 int main(int arg){
     print 100;
-    if(1<=1)
-    print 500;
-    if(1<=1){
-        print 90000;
-        print 800000;
+    if(3==2|| 1<2){
+        print 700;
     }
-    return 200;
+
+    return 10;
 }

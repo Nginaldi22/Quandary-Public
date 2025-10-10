@@ -27,7 +27,7 @@ parser code {:
 
 :};
 
-terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LESS,EQUALS;
+terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LESS,EQUALS, GREATER, AND, OR, NOT;
 terminal Long    INTCONST;
 terminal String IDENT;
 terminal  UMINUS;
@@ -39,6 +39,11 @@ non terminal StmtList        stmt_list;
 non terminal Condition       cond;
 non terminal Block           b_list;
 non terminal Block           body;
+precedence left ELSE;
+precedence left OR;
+precedence left AND;
+precedence left EQUALS;
+precedence left LESS, GREATER;
 precedence left PLUS, MINUS;
 precedence left MULT;
 precedence left UMINUS;
@@ -78,6 +83,24 @@ b_list ::= ""
 
   cond ::= expr: e1 LESS EQUALS expr: e2
   {:RESULT = new Condition(e1,e2,null,null,Condition.LESS_EQUALS,loc(e2left,e2right)); :}
+  |expr: e1 LESS expr: e2
+  {:RESULT = new Condition(e1,e2,null,null,Condition.LESS,loc(e2left,e2right)); :}
+  | expr: e1 GREATER EQUALS expr: e2
+  {:RESULT = new Condition(e1,e2,null,null,Condition.GREATER_EQUALS,loc(e2left,e2right)); :}
+  |expr: e1 GREATER expr: e2
+  {:RESULT = new Condition(e1,e2,null,null,Condition.GREATER,loc(e2left,e2right)); :}
+  |expr: e1 EQUALS EQUALS expr: e2
+  {:RESULT = new Condition(e1,e2,null,null,Condition.ABS_EQUALS,loc(e2left,e2right)); :}
+  |expr: e1 NOT EQUALS expr: e2
+  {:RESULT = new Condition(e1,e2,null,null,Condition.NOT_EQUALS,loc(e2left,e2right)); :}
+  |cond: c1 AND AND cond: c2
+  {:RESULT = new Condition(null,null,c1,c2,Condition.AND,loc(c2left,c2right)); :}
+  |cond: c1 OR OR cond: c2
+  {:RESULT = new Condition(null,null,c1,c2,Condition.OR,loc(c2left,c2right)); :}
+  | NOT cond:c1
+  {:RESULT = new Condition(null,null,c1,null,Condition.NOT_COND,loc(c1left,c1right)); :}
+  | RPAREN cond:c1 LPAREN
+  {:RESULT = new Condition(null,null,c1,null,Condition.JUST_COND,loc(c1left,c1right)); :}
   ;
 
 expr ::= INTCONST:c
