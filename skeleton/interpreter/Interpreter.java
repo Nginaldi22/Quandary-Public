@@ -103,521 +103,134 @@ public class Interpreter {
     }
 
     Object executeRoot(Program astRoot, long arg) {
-        env.put(astRoot.get_name(),arg);
-        return executeStmtList(astRoot.getstmtList());
-    }
-    Object executeStmtList(StmtList stmtList){
-        Object check = executeStmt(stmtList.getStmt());
-        if(check!=null){
-            return check;
-        }
-       return  executeStmtList(stmtList.getrest());
-    }
-    
-    Object executeBlock(Block b) {
-    if (b == null || b.get_stmt() == null) {
-        return null; 
-    }
-    Object check = executeStmt(b.get_stmt());
-    if (check != null) {
-        return check;
-    }
-    return executeBlock(b.get_next_Block());
-}
-    Object executeStmt(Stmt stmt){
-        if(stmt instanceof IfStmt){
-            return executeIfStmt((IfStmt)stmt);
-        }else if (stmt instanceof IfElseStmt){
-            return executeIfElseStmt((IfElseStmt)stmt);
-        }else if (stmt instanceof VarDecl) {
-        VarDecl varible = (VarDecl) stmt;
-        if(stmt.getExpr()==null){
-            env.put(varible.get_name(),null);
-        }else{
-            long value = (Long)evaluate(varible.getExpr());
-        env.put(varible.get_name(), value);
-        }
-        return null;
-        } 
-        else if(stmt.getType()=="p"){
-            System.out.println(evaluate(stmt.getExpr()));
-            return null;
-        }
-        return evaluate(stmt.getExpr());
+        HashMap<String, Long> env = new HashMap<>();
+        env.put(astRoot.get_name(), arg);
+        return executeStmtList(astRoot.getstmtList(), env);
     }
 
-    Object evaluate(Expr expr) {
+    Object executeStmtList(StmtList stmtList, HashMap<String, Long> env) {
+        if (stmtList == null || stmtList.getStmt() == null){
+            return null;
+        } 
+        Object check = executeStmt(stmtList.getStmt(), env);
+        if (check != null){
+            return check;
+        } 
+        return executeStmtList(stmtList.getrest(), env);
+    }
+
+    Object executeBlock(Block b, HashMap<String, Long> parentEnv) {
+        if (b == null || b.get_stmt() == null){
+            return null;
+        }
+        HashMap<String, Long> env = new HashMap<>(parentEnv);
+        Object check = executeStmt(b.get_stmt(), env);
+        if (check != null){
+            return check;
+        } 
+
+        return executeBlock(b.get_next_Block(), env);
+    }
+
+    Object executeStmt(Stmt stmt, HashMap<String, Long> env) {
+        if (stmt instanceof IfStmt) {
+            return executeIfStmt((IfStmt) stmt, env);
+        } else if (stmt instanceof IfElseStmt) {
+            return executeIfElseStmt((IfElseStmt) stmt, env);
+        } else if (stmt instanceof VarDecl) {
+            VarDecl variable = (VarDecl) stmt;
+            Long value; 
+            if(variable.getExpr() == null){
+                value = null;
+            }else{
+                value = (Long) evaluate(variable.getExpr(), env);
+            } 
+            env.put(variable.get_name(), value);
+            return null;
+        } else if (stmt.getType().equals("p")) {
+            System.out.println(evaluate(stmt.getExpr(), env));
+            return null;
+        }
+        return evaluate(stmt.getExpr(), env);
+    }
+
+    Object evaluate(Expr expr, HashMap<String, Long> env) {
         if (expr instanceof ConstExpr) {
-            return ((ConstExpr)expr).getValue();
+            return ((ConstExpr) expr).getValue();
         } else if (expr instanceof BinaryExpr) {
-            BinaryExpr binaryExpr = (BinaryExpr)expr;
+            BinaryExpr binaryExpr = (BinaryExpr) expr;
+            long left = (Long) evaluate(binaryExpr.getLeftExpr(), env);
+            long right = (Long) evaluate(binaryExpr.getRightExpr(), env);
             switch (binaryExpr.getOperator()) {
-                case BinaryExpr.PLUS: return (Long)evaluate(binaryExpr.getLeftExpr()) + (Long)evaluate(binaryExpr.getRightExpr());
-                case BinaryExpr.MINUS: return (Long)evaluate(binaryExpr.getLeftExpr()) - (Long)evaluate(binaryExpr.getRightExpr());
-                case BinaryExpr.MULT: return (Long)evaluate(binaryExpr.getLeftExpr()) * (Long)evaluate(binaryExpr.getRightExpr());
+                case BinaryExpr.PLUS: return left + right;
+                case BinaryExpr.MINUS: return left - right;
+                case BinaryExpr.MULT: return left * right;
                 default: throw new RuntimeException("Unhandled operator");
             }
-        } else if (expr instanceof UnaryMinus){
-            UnaryMinus unaryMinus= (UnaryMinus)expr;
-            return -(Long)evaluate(unaryMinus.getExpr());
-        }else if (expr instanceof VarExpr) {
-            String name = ((VarExpr)expr).get_name();
-            if (!env.containsKey(name)) {
-            throw new RuntimeException("var is already declared");
-            }
+        } else if (expr instanceof UnaryMinus) {
+            UnaryMinus unaryMinus = (UnaryMinus) expr;
+            return -(Long) evaluate(unaryMinus.getExpr(), env);
+        } else if (expr instanceof VarExpr) {
+            String name = ((VarExpr) expr).get_name();
+            if (!env.containsKey(name))
+                throw new RuntimeException("Variable '" + name + "' not declared");
             return env.get(name);
-        }
-        else {
+        } else {
             throw new RuntimeException("Unhandled Expr type");
         }
     }
 
-	public static void fatalError(String message, int processReturnCode) {
+    public static void fatalError(String message, int processReturnCode) {
         System.out.println(message);
         System.exit(processReturnCode);
-	}
-//////////////////////////////////////////////////////////////////////////
-/// ////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////
-    Object executeIfElseStmt(IfElseStmt stmt){
-    Block use =  stmt.getBlock();
-    Block use_else = stmt.getBlockTwo();
-    Condition c = stmt.getCondition();
-            switch(c.getType()){
-                case Condition.LESS_EQUALS:
-                if((long)evaluate(c.getfirstExpr())<=(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of first
-                }else{
-                    Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                case Condition.LESS:
-                if((long)evaluate(c.getfirstExpr())<(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of Second
-                }else{
-                    Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                case Condition.GREATER_EQUALS:
-                if((long)evaluate(c.getfirstExpr())>=(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                }else{
-                     Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                case Condition.GREATER:
-                if((long)evaluate(c.getfirstExpr())>(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                }else{
-                     Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                case Condition.ABS_EQUALS:
-                if((long)evaluate(c.getfirstExpr())==(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                   
-                }else{
-                     Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                case Condition.NOT_EQUALS:
-                if((long)evaluate(c.getfirstExpr())!=(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                }else{
-                     Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                case Condition.AND:
-                if(executeCondition(c.getfirstCondition())&& executeCondition(c.getsecondCondition())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                }else{
-                     Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                
-                case Condition.OR:
-                if(executeCondition(c.getfirstCondition())|| executeCondition(c.getsecondCondition())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    
-                }else{
-                     Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                case Condition.NOT_COND:
-                if(!executeCondition(c.getfirstCondition())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    
-                }else{
-                     Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-                case Condition.JUST_COND:
-                if(executeCondition(c.getfirstCondition())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    
-                }else{
-                     Object check =executeStmt(use_else.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use_else.get_next_Block());
-                            return check;
-                        }
-                }
-            }
+    }
+
+    //////////////////////////////////////////////////////////////////////
+    // Conditional statements
+    Object executeIfElseStmt(IfElseStmt stmt, HashMap<String, Long> env) {
+        Condition c = stmt.getCondition();
+        boolean conditionTrue = executeCondition(c, env);
+
+        if (conditionTrue) {
+            return executeBlock(stmt.getBlock(), new HashMap<>(env));
+        } else {
+            return executeBlock(stmt.getBlockTwo(), new HashMap<>(env));
+        }
+    }
+
+    Object executeIfStmt(IfStmt stmt, HashMap<String, Long> env) {
+        Condition c = stmt.getCondition();
+        boolean conditionTrue = executeCondition(c, env);
+        if (conditionTrue) {
+            return executeBlock(stmt.getBlock(), new HashMap<>(env));
+        }
         return null;
-}
-////////////////////////////////////////////////////////////////////////////////////////////
-/// /////////////////////////////////////////////////////////////////////////////////////////
-Object executeIfStmt(IfStmt stmt){
-    Block use =  stmt.getBlock();
-    Condition c = stmt.getCondition();
-            switch(c.getType()){
-                case Condition.LESS_EQUALS:
-                if((long)evaluate(c.getfirstExpr())<=(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of first
-                }
-                break;
-                case Condition.LESS:
-                if((long)evaluate(c.getfirstExpr())<(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of Second
-                }
-                break;
-                case Condition.GREATER_EQUALS:
-                if((long)evaluate(c.getfirstExpr())>=(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of third
-                }
-                break;
-                case Condition.GREATER:
-                if((long)evaluate(c.getfirstExpr())>(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of fourth
-                }
-                break;
-                case Condition.ABS_EQUALS:
-                if((long)evaluate(c.getfirstExpr())==(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of fith
-                }
-                break;
-                case Condition.NOT_EQUALS:
-                if((long)evaluate(c.getfirstExpr())!=(long)evaluate(c.getsecondExpr())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of sixth
-                }
-                break;
-                case Condition.AND:
-                if(executeCondition(c.getfirstCondition())&& executeCondition(c.getsecondCondition())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of seventh
-                }
-                break;
-                case Condition.OR:
-                if(executeCondition(c.getfirstCondition())|| executeCondition(c.getsecondCondition())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of eigth
-                }
-                break;
-                case Condition.NOT_COND:
-                if(!executeCondition(c.getfirstCondition())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of ninth
-                }
-                break;
-                case Condition.JUST_COND:
-                if(executeCondition(c.getfirstCondition())){
-                    if(use.get_single()){
-                        return executeStmt(use.get_stmt());
-                    }else{
-                        Object check =executeStmt(use.get_stmt());
-                        if(check != null){
-                            return check;
-                        }else{
-                            check =executeBlock(use.get_next_Block());
-                            return check;
-                        }
-                    }
-                    //end of tenth
-                }
-            }
-        return null;
-}
-/////////////////////////////////////////////////////////////////////////////////////////////////////////////
-/// //////////////////////////////////////////////////////////////////////////////////////////////////////////
-Boolean executeCondition(Condition c){
-    Boolean ans=false;
-    switch(c.getType()){    
-         case Condition.LESS_EQUALS:
-            if((long)evaluate(c.getfirstExpr())<=(long)evaluate(c.getsecondExpr())){
-                  ans = true;
-                }
-                 break;
-                case Condition.LESS:
-                if((long)evaluate(c.getfirstExpr())<(long)evaluate(c.getsecondExpr())){
-                     ans = true;
-                }
-                break;
-                case Condition.GREATER_EQUALS:
-                if((long)evaluate(c.getfirstExpr())>=(long)evaluate(c.getsecondExpr())){
-                    ans = true;
-                }
-                break;
-                case Condition.GREATER:
-                if((long)evaluate(c.getfirstExpr())>(long)evaluate(c.getsecondExpr())){
-                    ans = true;
-                }
-                break;
-                case Condition.ABS_EQUALS:
-                if((long)evaluate(c.getfirstExpr())==(long)evaluate(c.getsecondExpr())){
-                    ans = true;
-                }
-                break;
-                case Condition.NOT_EQUALS:
-                if((long)evaluate(c.getfirstExpr())!=(long)evaluate(c.getsecondExpr())){
-                        ans=true;;
-                }
-                break;
-            }
-    return ans;
+    }
+
+    Boolean executeCondition(Condition c, HashMap<String, Long> env) {
+        switch (c.getType()) {
+            case Condition.LESS_EQUALS:
+                return (Long) evaluate(c.getfirstExpr(), env) <= (Long) evaluate(c.getsecondExpr(), env);
+            case Condition.LESS:
+                return (Long) evaluate(c.getfirstExpr(), env) < (Long) evaluate(c.getsecondExpr(), env);
+            case Condition.GREATER_EQUALS:
+                return (Long) evaluate(c.getfirstExpr(), env) >= (Long) evaluate(c.getsecondExpr(), env);
+            case Condition.GREATER:
+                return (Long) evaluate(c.getfirstExpr(), env) > (Long) evaluate(c.getsecondExpr(), env);
+            case Condition.ABS_EQUALS:
+                return (Long) evaluate(c.getfirstExpr(), env) == (Long) evaluate(c.getsecondExpr(), env);
+            case Condition.NOT_EQUALS:
+                return (Long) evaluate(c.getfirstExpr(), env) != (Long) evaluate(c.getsecondExpr(), env);
+            case Condition.AND:
+                return executeCondition(c.getfirstCondition(), env) && executeCondition(c.getsecondCondition(), env);
+            case Condition.OR:
+                return executeCondition(c.getfirstCondition(), env) || executeCondition(c.getsecondCondition(), env);
+            case Condition.NOT_COND:
+                return !executeCondition(c.getfirstCondition(), env);
+            case Condition.JUST_COND:
+                return executeCondition(c.getfirstCondition(), env);
+            default:
+                throw new RuntimeException("Unhandled condition type");
+        }
     }
 }
