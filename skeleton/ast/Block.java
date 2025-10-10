@@ -1,19 +1,22 @@
 package ast;
 
-public class Block {
+public class Block extends Stmt {
     Block b;
     Stmt s;
     boolean single= false;
     public Block(Stmt s, Block b){
+        super(null, null, null, null);
         this.s=s;
         this.b=b;
         single =false;
     }
     public Block(String s){
+        super(null, null, null, null);
         this.s=null;
         this.b=null;
     }
     public Block(Stmt s){
+        super(null, null, null, null);
         this.s=s;
         single = true;
     }
