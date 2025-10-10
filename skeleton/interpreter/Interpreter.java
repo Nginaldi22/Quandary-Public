@@ -1,6 +1,7 @@
 package interpreter;
 
 import java.io.*;
+import java.util.HashMap;
 import java.util.Random;
 
 import parser.ParserWrapper;
@@ -19,7 +20,7 @@ public class Interpreter {
     public static final int EXIT_NONDETERMINISM_ERROR = 7;
 
     static private Interpreter interpreter;
-
+    HashMap<String, Long> env = new HashMap<>();
     public static Interpreter getInterpreter() {
         return interpreter;
     }
@@ -102,6 +103,7 @@ public class Interpreter {
     }
 
     Object executeRoot(Program astRoot, long arg) {
+        env.put(astRoot.get_name(),arg);
         return executeStmtList(astRoot.getstmtList());
     }
     Object executeStmtList(StmtList stmtList){
@@ -127,7 +129,16 @@ public class Interpreter {
             return executeIfStmt((IfStmt)stmt);
         }else if (stmt instanceof IfElseStmt){
             return executeIfElseStmt((IfElseStmt)stmt);
+        }else if (stmt instanceof VarDecl) {
+        VarDecl varible = (VarDecl) stmt;
+        if(stmt.getExpr()==null){
+            env.put(varible.get_name(),null);
+        }else{
+            long value = (Long)evaluate(varible.getExpr());
+        env.put(varible.get_name(), value);
         }
+        return null;
+        } 
         else if(stmt.getType()=="p"){
             System.out.println(evaluate(stmt.getExpr()));
             return null;
@@ -149,7 +160,14 @@ public class Interpreter {
         } else if (expr instanceof UnaryMinus){
             UnaryMinus unaryMinus= (UnaryMinus)expr;
             return -(Long)evaluate(unaryMinus.getExpr());
-        }else {
+        }else if (expr instanceof VarExpr) {
+            String name = ((VarExpr)expr).get_name();
+            if (!env.containsKey(name)) {
+            throw new RuntimeException("var is already declared");
+            }
+            return env.get(name);
+        }
+        else {
             throw new RuntimeException("Unhandled Expr type");
         }
     }
@@ -158,7 +176,9 @@ public class Interpreter {
         System.out.println(message);
         System.exit(processReturnCode);
 	}
-
+//////////////////////////////////////////////////////////////////////////
+/// ////////////////////////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////////////////////
     Object executeIfElseStmt(IfElseStmt stmt){
     Block use =  stmt.getBlock();
     Block use_else = stmt.getBlockTwo();

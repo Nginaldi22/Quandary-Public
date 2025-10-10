@@ -39,6 +39,7 @@ non terminal StmtList        stmt_list;
 non terminal Condition       cond;
 non terminal Block           b_list;
 non terminal Block           body;
+non terminal VarDecl     var_decl;
 precedence left ELSE;
 precedence left OR;
 precedence left AND;
@@ -50,8 +51,8 @@ precedence left UMINUS;
 
 start with program;
 
-program ::= INT IDENT LPAREN INT IDENT RPAREN LEFT_CURL stmt_list:slist RIGHT_CURL
-            {: RESULT = new Program(slist, loc(slistleft, slistright)); :}
+program ::= INT IDENT LPAREN INT IDENT: param RPAREN LEFT_CURL stmt_list:slist RIGHT_CURL
+            {: RESULT = new Program(slist, param, loc(slistleft, slistright)); :}
          ;
 
 stmt_list::= stmt:s stmt_list:slist
@@ -67,8 +68,17 @@ stmt ::=
       {: RESULT = new Stmt(e, "r", null, loc(eleft, eright)); :}
   | IF LPAREN cond:c RPAREN body:b
       {: RESULT = new IfStmt(b, c, loc(bleft, bright)); :}
-  | IF LPAREN cond:c RPAREN body:b ELSE body: b2
-    {: RESULT = new IfElseStmt(b, c, b2, loc(bleft, bright)); :}
+  | IF LPAREN cond:c RPAREN body:b ELSE body:b2
+      {: RESULT = new IfElseStmt(b, c, b2, loc(bleft, bright)); :}
+  | var_decl:d SEMI_COLON
+      {: RESULT = d; :}
+  ;
+
+  var_decl ::=
+    INT IDENT:id
+      {: RESULT = new VarDecl(id, null, loc(idleft, idright)); :}
+  | INT IDENT:id EQUALS expr:e
+      {: RESULT = new VarDecl(id, e, loc(idleft, eright)); :}
   ;
 
 body ::=stmt:s
@@ -105,16 +115,19 @@ b_list ::= ""
   {:RESULT = new Condition(null,null,c1,null,Condition.JUST_COND,loc(c1left,c1right)); :}
   ;
 
-expr ::= INTCONST:c
-         {: RESULT = new ConstExpr(c, loc(cleft, cright)); :}
-      | MINUS expr:e
+expr ::=
+    INTCONST:c
+      {: RESULT = new ConstExpr(c, loc(cleft, cright)); :}
+  | MINUS expr:e
       {: RESULT = new UnaryMinus(e, loc(eleft, eright)); :}
       %prec UMINUS
-       | binaryExpr:e
-         {: RESULT = e; :}
-      |  LPAREN expr:e RPAREN
-         {: RESULT = e; :}
-      ;
+  | binaryExpr:e
+      {: RESULT = e; :}
+  | LPAREN expr:e RPAREN
+      {: RESULT = e; :}
+  | IDENT:id
+      {: RESULT = new VarExpr(id, loc(idleft, idright)); :}
+  ;
 
 binaryExpr ::= expr:e1 PLUS expr:e2
                {: RESULT = new BinaryExpr(e1, BinaryExpr.PLUS, e2, loc(e1left, e1right)); :}
