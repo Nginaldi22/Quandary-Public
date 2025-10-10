@@ -122,7 +122,44 @@ public class Interpreter {
     }
     return executeBlock(b.get_next_Block());
 }
-Object executeIfElseStmt(IfElseStmt stmt){
+    Object executeStmt(Stmt stmt){
+        if(stmt instanceof IfStmt){
+            return executeIfStmt((IfStmt)stmt);
+        }else if (stmt instanceof IfElseStmt){
+            return executeIfElseStmt((IfElseStmt)stmt);
+        }
+        else if(stmt.getType()=="p"){
+            System.out.println(evaluate(stmt.getExpr()));
+            return null;
+        }
+        return evaluate(stmt.getExpr());
+    }
+
+    Object evaluate(Expr expr) {
+        if (expr instanceof ConstExpr) {
+            return ((ConstExpr)expr).getValue();
+        } else if (expr instanceof BinaryExpr) {
+            BinaryExpr binaryExpr = (BinaryExpr)expr;
+            switch (binaryExpr.getOperator()) {
+                case BinaryExpr.PLUS: return (Long)evaluate(binaryExpr.getLeftExpr()) + (Long)evaluate(binaryExpr.getRightExpr());
+                case BinaryExpr.MINUS: return (Long)evaluate(binaryExpr.getLeftExpr()) - (Long)evaluate(binaryExpr.getRightExpr());
+                case BinaryExpr.MULT: return (Long)evaluate(binaryExpr.getLeftExpr()) * (Long)evaluate(binaryExpr.getRightExpr());
+                default: throw new RuntimeException("Unhandled operator");
+            }
+        } else if (expr instanceof UnaryMinus){
+            UnaryMinus unaryMinus= (UnaryMinus)expr;
+            return -(Long)evaluate(unaryMinus.getExpr());
+        }else {
+            throw new RuntimeException("Unhandled Expr type");
+        }
+    }
+
+	public static void fatalError(String message, int processReturnCode) {
+        System.out.println(message);
+        System.exit(processReturnCode);
+	}
+
+    Object executeIfElseStmt(IfElseStmt stmt){
     Block use =  stmt.getBlock();
     Block use_else = stmt.getBlockTwo();
     Condition c = stmt.getCondition();
@@ -357,6 +394,8 @@ Object executeIfElseStmt(IfElseStmt stmt){
             }
         return null;
 }
+////////////////////////////////////////////////////////////////////////////////////////////
+/// /////////////////////////////////////////////////////////////////////////////////////////
 Object executeIfStmt(IfStmt stmt){
     Block use =  stmt.getBlock();
     Condition c = stmt.getCondition();
@@ -523,7 +562,8 @@ Object executeIfStmt(IfStmt stmt){
             }
         return null;
 }
-
+/////////////////////////////////////////////////////////////////////////////////////////////////////////////
+/// //////////////////////////////////////////////////////////////////////////////////////////////////////////
 Boolean executeCondition(Condition c){
     Boolean ans=false;
     switch(c.getType()){    
@@ -559,41 +599,5 @@ Boolean executeCondition(Condition c){
                 break;
             }
     return ans;
-}
-    Object executeStmt(Stmt stmt){
-        if(stmt instanceof IfStmt){
-            return executeIfStmt((IfStmt)stmt);
-        }else if (stmt instanceof IfElseStmt){
-            return executeIfElseStmt((IfElseStmt)stmt);
-        }
-        else if(stmt.getType()=="p"){
-            System.out.println(evaluate(stmt.getExpr()));
-            return null;
-        }
-        return evaluate(stmt.getExpr());
     }
-
-    Object evaluate(Expr expr) {
-        if (expr instanceof ConstExpr) {
-            return ((ConstExpr)expr).getValue();
-        } else if (expr instanceof BinaryExpr) {
-            BinaryExpr binaryExpr = (BinaryExpr)expr;
-            switch (binaryExpr.getOperator()) {
-                case BinaryExpr.PLUS: return (Long)evaluate(binaryExpr.getLeftExpr()) + (Long)evaluate(binaryExpr.getRightExpr());
-                case BinaryExpr.MINUS: return (Long)evaluate(binaryExpr.getLeftExpr()) - (Long)evaluate(binaryExpr.getRightExpr());
-                case BinaryExpr.MULT: return (Long)evaluate(binaryExpr.getLeftExpr()) * (Long)evaluate(binaryExpr.getRightExpr());
-                default: throw new RuntimeException("Unhandled operator");
-            }
-        } else if (expr instanceof UnaryMinus){
-            UnaryMinus unaryMinus= (UnaryMinus)expr;
-            return -(Long)evaluate(unaryMinus.getExpr());
-        }else {
-            throw new RuntimeException("Unhandled Expr type");
-        }
-    }
-
-	public static void fatalError(String message, int processReturnCode) {
-        System.out.println(message);
-        System.exit(processReturnCode);
-	}
 }
