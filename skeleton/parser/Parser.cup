@@ -79,6 +79,8 @@ stmt ::=
       {: RESULT = new VarDecl(id, null, loc(idleft, idright)); :}
   | INT IDENT:id EQUALS expr:e
       {: RESULT = new VarDecl(id, e, loc(idleft, eright)); :}
+  | IDENT : id EQUALS expr: e
+      {: RESULT = new VarDecl(id, e, loc(idleft, eright)); :}
   ;
 
 body ::=stmt:s
@@ -93,7 +95,9 @@ b_list ::= ""
       {: RESULT = new Block(s, bl); :}
   ;
 
-  cond ::= expr: e1 LESS EQUALS expr: e2
+  cond ::= LPAREN cond:c RPAREN
+    {: RESULT = c; :}
+  |expr: e1 LESS EQUALS expr: e2
   {:RESULT = new Condition(e1,e2,null,null,Condition.LESS_EQUALS,loc(e2left,e2right)); :}
   |expr: e1 LESS expr: e2
   {:RESULT = new Condition(e1,e2,null,null,Condition.LESS,loc(e2left,e2right)); :}
@@ -111,8 +115,6 @@ b_list ::= ""
   {:RESULT = new Condition(null,null,c1,c2,Condition.OR,loc(c2left,c2right)); :}
   | NOT cond:c1
   {:RESULT = new Condition(null,null,c1,null,Condition.NOT_COND,loc(c1left,c1right)); :}
-  | RPAREN cond:c1 LPAREN
-  {:RESULT = new Condition(null,null,c1,null,Condition.JUST_COND,loc(c1left,c1right)); :}
   ;
 
 expr ::=
