@@ -67,6 +67,8 @@ stmt ::=
       {: RESULT = new Stmt(e, "r", null, loc(eleft, eright)); :}
   | IF LPAREN cond:c RPAREN body:b
       {: RESULT = new IfStmt(b, c, loc(bleft, bright)); :}
+  | IF LPAREN cond:c RPAREN body:b ELSE body: b2
+    {: RESULT = new IfElseStmt(b, c, b2, loc(bleft, bright)); :}
   ;
 
 body ::=stmt:s

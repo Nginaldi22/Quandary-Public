@@ -122,7 +122,241 @@ public class Interpreter {
     }
     return executeBlock(b.get_next_Block());
 }
-
+Object executeIfElseStmt(IfElseStmt stmt){
+    Block use =  stmt.getBlock();
+    Block use_else = stmt.getBlockTwo();
+    Condition c = stmt.getCondition();
+            switch(c.getType()){
+                case Condition.LESS_EQUALS:
+                if((long)evaluate(c.getfirstExpr())<=(long)evaluate(c.getsecondExpr())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                    //end of first
+                }else{
+                    Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                case Condition.LESS:
+                if((long)evaluate(c.getfirstExpr())<(long)evaluate(c.getsecondExpr())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                    //end of Second
+                }else{
+                    Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                case Condition.GREATER_EQUALS:
+                if((long)evaluate(c.getfirstExpr())>=(long)evaluate(c.getsecondExpr())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                }else{
+                     Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                case Condition.GREATER:
+                if((long)evaluate(c.getfirstExpr())>(long)evaluate(c.getsecondExpr())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                }else{
+                     Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                case Condition.ABS_EQUALS:
+                if((long)evaluate(c.getfirstExpr())==(long)evaluate(c.getsecondExpr())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                   
+                }else{
+                     Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                case Condition.NOT_EQUALS:
+                if((long)evaluate(c.getfirstExpr())!=(long)evaluate(c.getsecondExpr())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                }else{
+                     Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                case Condition.AND:
+                if(executeCondition(c.getfirstCondition())&& executeCondition(c.getsecondCondition())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                }else{
+                     Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                
+                case Condition.OR:
+                if(executeCondition(c.getfirstCondition())|| executeCondition(c.getsecondCondition())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                    
+                }else{
+                     Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                case Condition.NOT_COND:
+                if(!executeCondition(c.getfirstCondition())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                    
+                }else{
+                     Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+                case Condition.JUST_COND:
+                if(executeCondition(c.getfirstCondition())){
+                    if(use.get_single()){
+                        return executeStmt(use.get_stmt());
+                    }else{
+                        Object check =executeStmt(use.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use.get_next_Block());
+                            return check;
+                        }
+                    }
+                    
+                }else{
+                     Object check =executeStmt(use_else.get_stmt());
+                        if(check != null){
+                            return check;
+                        }else{
+                            check =executeBlock(use_else.get_next_Block());
+                            return check;
+                        }
+                }
+            }
+        return null;
+}
 Object executeIfStmt(IfStmt stmt){
     Block use =  stmt.getBlock();
     Condition c = stmt.getCondition();
@@ -254,6 +488,7 @@ Object executeIfStmt(IfStmt stmt){
                     }
                     //end of eigth
                 }
+                break;
                 case Condition.NOT_COND:
                 if(!executeCondition(c.getfirstCondition())){
                     if(use.get_single()){
@@ -269,6 +504,7 @@ Object executeIfStmt(IfStmt stmt){
                     }
                     //end of ninth
                 }
+                break;
                 case Condition.JUST_COND:
                 if(executeCondition(c.getfirstCondition())){
                     if(use.get_single()){
@@ -327,6 +563,8 @@ Boolean executeCondition(Condition c){
     Object executeStmt(Stmt stmt){
         if(stmt instanceof IfStmt){
             return executeIfStmt((IfStmt)stmt);
+        }else if (stmt instanceof IfElseStmt){
+            return executeIfElseStmt((IfElseStmt)stmt);
         }
         else if(stmt.getType()=="p"){
             System.out.println(evaluate(stmt.getExpr()));
