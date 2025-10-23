@@ -1,6 +1,6 @@
 package ast;
 
-public class StmtList extends ASTNode{
+public class StmtList extends Stmt{
     Stmt current;
     StmtList rest;
     public StmtList(Stmt stmt, StmtList rest, Location loc){

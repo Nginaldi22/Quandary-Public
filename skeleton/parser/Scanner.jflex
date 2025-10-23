@@ -77,12 +77,16 @@ white_space = {new_line} | [ \t\f]
 "print"      {return symbol("print", PRINT);}
 "if"         {return symbol("if", IF);}
 "else"       {return symbol("else", ELSE);}
-"<"          {return symbol("<", LESS);}
-"="          {return symbol("=", EQUALS);}
-">"          {return symbol("<", GREATER);}
-"&"          {return symbol("<", AND);}
-"|"          {return symbol("<", OR);}
-"!"          {return symbol("<", NOT);}
+"<="          {return symbol("<=", LE);}
+"=="          {return symbol("==", EQ);}
+">="          {return symbol(">=", GE);}
+"&&"          {return symbol("&&", AND);}
+"||"          {return symbol("||", OR);}
+"!"          {return symbol("!", NOT);}
+"<"          {return symbol("<", LT);}
+">"          {return symbol(">", GT);}
+"!="          {return symbol("!=", NE);}
+"="           {return symbol("=", ASSIGN); :}
 {IDENT}      {return symbol("IDENT", IDENT, yytext());}
 
 

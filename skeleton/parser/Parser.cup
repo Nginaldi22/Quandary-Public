@@ -27,7 +27,8 @@ parser code {:
 
 :};
 
-terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LESS,EQUALS, GREATER, AND, OR, NOT;
+terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LT, GT, 
+NOT, EQ, LE, GE, AND, OR, NE,ASSIGN
 terminal Long    INTCONST;
 terminal String IDENT;
 terminal  UMINUS;
@@ -37,17 +38,15 @@ non terminal BinaryExpr      binaryExpr;
 non terminal Stmt            stmt;
 non terminal StmtList        stmt_list;
 non terminal Condition       cond;
-non terminal Block           b_list;
-non terminal Block           body;
-non terminal VarDecl     var_decl;
-precedence left ELSE;
 precedence left OR;
 precedence left AND;
-precedence left EQUALS;
-precedence left LESS, GREATER;
+precedence left NOT;
+precedence left GE,LE,LT,EQ,NE;
 precedence left PLUS, MINUS;
 precedence left MULT;
 precedence left UMINUS;
+
+precedence left ELSE;
 
 start with program;
 
@@ -57,65 +56,23 @@ program ::= INT IDENT LPAREN INT IDENT: param RPAREN LEFT_CURL stmt_list:slist R
 
 stmt_list::= stmt:s stmt_list:slist
 {: RESULT = new StmtList(s,slist,loc(sleft,sright)); :}
-| ""
-{: RESULT = new StmtList("", loc(100,100)); :}
+| /*Empty String */
+{: RESULT =null; :}
   ;
 
-stmt ::=
-    PRINT expr:e SEMI_COLON
-      {: RESULT = new Stmt(e, "p", null, loc(eleft, eright)); :}
-  | RETURN expr:e SEMI_COLON
-      {: RESULT = new Stmt(e, "r", null, loc(eleft, eright)); :}
-  | IF LPAREN cond:c RPAREN body:b
-      {: RESULT = new IfStmt(b, c, loc(bleft, bright)); :}
-  | IF LPAREN cond:c RPAREN body:b ELSE body:b2
-      {: RESULT = new IfElseStmt(b, c, b2, loc(bleft, bright)); :}
-  | var_decl:d SEMI_COLON
-      {: RESULT = d; :}
-  ;
-
-  var_decl ::=
-    INT IDENT:id
-      {: RESULT = new VarDecl(id, null, loc(idleft, idright)); :}
-  | INT IDENT:id EQUALS expr:e
-      {: RESULT = new VarDecl(id, e, loc(idleft, eright)); :}
-  | IDENT : id EQUALS expr: e
-      {: RESULT = new VarDecl(id, e, loc(idleft, eright)); :}
-  ;
-
-body ::=stmt:s
-      {: RESULT = new Block(s); :}
-  |  LEFT_CURL b_list:b RIGHT_CURL
-      {: RESULT = b; :}
-  ;
-
-b_list ::= ""
-      {: RESULT = new Block(""); :}
-  | stmt:s b_list:bl
-      {: RESULT = new Block(s, bl); :}
-  ;
-
-  cond ::= LPAREN cond:c RPAREN
-    {: RESULT = c; :}
-  |expr: e1 LESS EQUALS expr: e2
-  {:RESULT = new Condition(e1,e2,null,null,Condition.LESS_EQUALS,loc(e2left,e2right)); :}
-  |expr: e1 LESS expr: e2
-  {:RESULT = new Condition(e1,e2,null,null,Condition.LESS,loc(e2left,e2right)); :}
-  | expr: e1 GREATER EQUALS expr: e2
-  {:RESULT = new Condition(e1,e2,null,null,Condition.GREATER_EQUALS,loc(e2left,e2right)); :}
-  |expr: e1 GREATER expr: e2
-  {:RESULT = new Condition(e1,e2,null,null,Condition.GREATER,loc(e2left,e2right)); :}
-  |expr: e1 EQUALS EQUALS expr: e2
-  {:RESULT = new Condition(e1,e2,null,null,Condition.ABS_EQUALS,loc(e2left,e2right)); :}
-  |expr: e1 NOT EQUALS expr: e2
-  {:RESULT = new Condition(e1,e2,null,null,Condition.NOT_EQUALS,loc(e2left,e2right)); :}
-  |cond: c1 AND AND cond: c2
-  {:RESULT = new Condition(null,null,c1,c2,Condition.AND,loc(c2left,c2right)); :}
-  |cond: c1 OR OR cond: c2
-  {:RESULT = new Condition(null,null,c1,c2,Condition.OR,loc(c2left,c2right)); :}
-  | NOT cond:c1
-  {:RESULT = new Condition(null,null,c1,null,Condition.NOT_COND,loc(c1left,c1right)); :}
-  ;
+stmt ::= INT IDENT: varName ASSIGN expr: e SEMI_COLON
+{: RESULT= new DeclStmt(varName, e, loc(varNameleft,varNameright)); :}
+| IF LPAREN cond: c RPAREN stmt:s
+{: RESULT= new IfStmt(c,s,null,loc(condleft,condright)); :}
+| IF LPAREN cond: c RPAREN stmt:s1 ELSE stmt: s2
+{: RESULT= new IfStmt(c,s1,s2,loc(condleft,condright)); :}
+| PRINT expr:e SEMI_COLON
+{: RESULT = new PrintStmt(e,loc(eleft,eright)); :}
+| RETURN expr: e SEMI_COLON
+{:RESULT = new ReturnStmt(e,loc(eleft,eright)); :}
+| LEFT_CURL StmtList: sl RIGHT_CURL
+{: RESULT = sl; :}
+;
 
 expr ::=
     INTCONST:c
@@ -127,8 +84,8 @@ expr ::=
       {: RESULT = e; :}
   | LPAREN expr:e RPAREN
       {: RESULT = e; :}
-  | IDENT:id
-      {: RESULT = new VarExpr(id, loc(idleft, idright)); :}
+  | IDENT: varName
+    {: RESULT = new IdentExpr(varName, loc(varNameleft, varNameright)); :}
   ;
 
 binaryExpr ::= expr:e1 PLUS expr:e2
@@ -138,3 +95,25 @@ binaryExpr ::= expr:e1 PLUS expr:e2
                | expr:e1 MULT expr:e2
                {: RESULT = new BinaryExpr(e1, BinaryExpr.MULT, e2, loc(e1left, e1right)); :}
             ;
+
+cond::= expr: e1 LE expr:e2
+{: RESULT = new CompCond(e1, CompCond.LE, e2, loc(e1left,e1right)); :}
+|e1 GE expr:e2
+{: RESULT = new CompCond(e1, CompCond.GE, e2, loc(e1left,e1right)); :}
+|e1 LT expr:e2
+{: RESULT = new CompCond(e1, CompCond.LT, e2, loc(e1left,e1right)); :}
+|e1 GT expr:e2
+{: RESULT = new CompCond(e1, CompCond.GT, e2, loc(e1left,e1right)); :}
+|e1 EQ expr:e2
+{: RESULT = new CompCond(e1, CompCond.EQ, e2, loc(e1left,e1right)); :}
+|e1 NE expr:e2
+{: RESULT = new CompCond(e1, CompCond.NE, e2, loc(e1left,e1right)); :}
+| cond: e1 AND cond:e2
+{:RESULT= new LogicalCond(e1,LogicalCond.AND, e2, loc(e1left,e1right)); :}
+| cond: e1 OR cond:e2
+{:RESULT= new LogicalCond(e1,LogicalCond.OR, e2, loc(e1left,e1right)); :}
+| NOT cond: e
+{:RESULT= new LogicalCond(e,LogicalCond.NOT, null, loc(eleft,eright)); :}
+| LPAREN cond:c RPAREN
+{: RESULT = c; :}
+;

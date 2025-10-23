@@ -1,18 +1,25 @@
 package ast;
 
-public class IfStmt extends Stmt{
-    Block b;
-    Condition c;
-    public IfStmt(Block b, Condition c, Location loc){
-        super(null,null,null,loc);
-        this.b=b;
-        this.c=c;
+public class IfStmt  extends Stmt{
+    final Condition cond;
+    final Stmt theStmt;
+    final Stmt elseStmt;
+
+    public IfStmt(Condition cond, Stmt thenStmt, Stmt elseStmt, Location loc){
+        super(loc);
+        this.cond=cond;
+        this.theStmt= thenStmt;
+        this.elseStmt=elseStmt;
     }
-    public Block getBlock(){
-        return b;
+    public Condition getCond(){
+        return cond;
     }
-    public Condition getCondition(){
-        return c;
+    public Stmt getThenStmt(){
+        return theStmt;
+    }
+    public Stmt getElseStmt(){
+        return elseStmt;
     }
     
+
 }

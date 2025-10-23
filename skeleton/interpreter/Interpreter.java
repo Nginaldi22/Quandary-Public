@@ -105,53 +105,27 @@ public class Interpreter {
     Object executeRoot(Program astRoot, long arg) {
         HashMap<String, Long> env = new HashMap<>();
         env.put(astRoot.get_name(), arg);
-        return executeStmtList(astRoot.getstmtList(), env);
+        return executeStmt(astRoot.getstmtList(), env);
     }
 
-    Object executeStmtList(StmtList stmtList, HashMap<String, Long> env) {
-        if (stmtList == null || stmtList.getStmt() == null){
-            return null;
-        } 
-        Object check = executeStmt(stmtList.getStmt(), env);
-        if (check != null){
-            return check;
-        } 
-        return executeStmtList(stmtList.getrest(), env);
-    }
-
-    Object executeBlock(Block b, HashMap<String, Long> parentEnv) {
-        if (b == null || b.get_stmt() == null){
-            return null;
-        }
-        HashMap<String, Long> env = new HashMap<>(parentEnv);
-        Object check = executeStmt(b.get_stmt(), env);
-        if (check != null){
-            return check;
-        } 
-
-        return executeBlock(b.get_next_Block(), env);
-    }
 
     Object executeStmt(Stmt stmt, HashMap<String, Long> env) {
-        if (stmt instanceof IfStmt) {
-            return executeIfStmt((IfStmt) stmt, env);
-        } else if (stmt instanceof IfElseStmt) {
-            return executeIfElseStmt((IfElseStmt) stmt, env);
-        } else if (stmt instanceof VarDecl) {
-            VarDecl variable = (VarDecl) stmt;
-            Long value; 
-            if(variable.getExpr() == null){
-                value = null;
-            }else{
-                value = (Long) evaluate(variable.getExpr(), env);
-            } 
-            env.put(variable.get_name(), value);
+        if(stmt instanceof StmtList){
+            StmtList sl = (StmtList)stmt;
+            Object retVal = executeStmt(sl.getStmt(), env);
+            if(retVal!=null){
+                return retVal;
+            }
+            if(sl.getrest()!=null){
+                return executeStmt(sl.getrest(),env);
+            }
             return null;
-        } else if (stmt.getType().equals("p")) {
-            System.out.println(evaluate(stmt.getExpr(), env));
+        }else if (stmt instanceof DeclStmt){
+            DeclStmt s = (DeclStmt)stmt;
+            env.put(s.getVarName(),(long)evaluate(s.getExpr(),env));
             return null;
         }
-        return evaluate(stmt.getExpr(), env);
+        return evaluate(((ReturnStmt)stmt).getExpr(),env);
     }
 
     Object evaluate(Expr expr, HashMap<String, Long> env) {
@@ -185,52 +159,6 @@ public class Interpreter {
         System.exit(processReturnCode);
     }
 
-    //////////////////////////////////////////////////////////////////////
-    // Conditional statements
-    Object executeIfElseStmt(IfElseStmt stmt, HashMap<String, Long> env) {
-        Condition c = stmt.getCondition();
-        boolean conditionTrue = executeCondition(c, env);
-
-        if (conditionTrue) {
-            return executeBlock(stmt.getBlock(), new HashMap<>(env));
-        } else {
-            return executeBlock(stmt.getBlockTwo(), new HashMap<>(env));
-        }
-    }
-
-    Object executeIfStmt(IfStmt stmt, HashMap<String, Long> env) {
-        Condition c = stmt.getCondition();
-        boolean conditionTrue = executeCondition(c, env);
-        if (conditionTrue) {
-            return executeBlock(stmt.getBlock(), new HashMap<>(env));
-        }
-        return null;
-    }
-
-    Boolean executeCondition(Condition c, HashMap<String, Long> env) {
-        switch (c.getType()) {
-            case Condition.LESS_EQUALS:
-                return (Long) evaluate(c.getfirstExpr(), env) <= (Long) evaluate(c.getsecondExpr(), env);
-            case Condition.LESS:
-                return (Long) evaluate(c.getfirstExpr(), env) < (Long) evaluate(c.getsecondExpr(), env);
-            case Condition.GREATER_EQUALS:
-                return (Long) evaluate(c.getfirstExpr(), env) >= (Long) evaluate(c.getsecondExpr(), env);
-            case Condition.GREATER:
-                return (Long) evaluate(c.getfirstExpr(), env) > (Long) evaluate(c.getsecondExpr(), env);
-            case Condition.ABS_EQUALS:
-                return (Long) evaluate(c.getfirstExpr(), env) == (Long) evaluate(c.getsecondExpr(), env);
-            case Condition.NOT_EQUALS:
-                return (Long) evaluate(c.getfirstExpr(), env) != (Long) evaluate(c.getsecondExpr(), env);
-            case Condition.AND:
-                return executeCondition(c.getfirstCondition(), env) && executeCondition(c.getsecondCondition(), env);
-            case Condition.OR:
-                return executeCondition(c.getfirstCondition(), env) || executeCondition(c.getsecondCondition(), env);
-            case Condition.NOT_COND:
-                return !executeCondition(c.getfirstCondition(), env);
-            case Condition.JUST_COND:
-                return executeCondition(c.getfirstCondition(), env);
-            default:
-                throw new RuntimeException("Unhandled condition type");
-        }
-    }
+   
+    
 }
