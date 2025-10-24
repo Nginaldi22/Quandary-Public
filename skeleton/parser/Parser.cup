@@ -28,7 +28,7 @@ parser code {:
 :};
 
 terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LT, GT, 
-NOT, EQ, LE, GE, AND, OR, NE,ASSIGN
+NOT, EQ, LE, GE, AND, OR, NE,ASSIGN;
 terminal Long    INTCONST;
 terminal String IDENT;
 terminal  UMINUS;
@@ -63,14 +63,14 @@ stmt_list::= stmt:s stmt_list:slist
 stmt ::= INT IDENT: varName ASSIGN expr: e SEMI_COLON
 {: RESULT= new DeclStmt(varName, e, loc(varNameleft,varNameright)); :}
 | IF LPAREN cond: c RPAREN stmt:s
-{: RESULT= new IfStmt(c,s,null,loc(condleft,condright)); :}
+{: RESULT= new IfStmt(c,s,null,loc(cleft,cright)); :}
 | IF LPAREN cond: c RPAREN stmt:s1 ELSE stmt: s2
-{: RESULT= new IfStmt(c,s1,s2,loc(condleft,condright)); :}
+{: RESULT= new IfStmt(c,s1,s2,loc(cleft,cright)); :}
 | PRINT expr:e SEMI_COLON
 {: RESULT = new PrintStmt(e,loc(eleft,eright)); :}
 | RETURN expr: e SEMI_COLON
 {:RESULT = new ReturnStmt(e,loc(eleft,eright)); :}
-| LEFT_CURL StmtList: sl RIGHT_CURL
+| LEFT_CURL stmt_list: sl RIGHT_CURL
 {: RESULT = sl; :}
 ;
 
@@ -96,24 +96,25 @@ binaryExpr ::= expr:e1 PLUS expr:e2
                {: RESULT = new BinaryExpr(e1, BinaryExpr.MULT, e2, loc(e1left, e1right)); :}
             ;
 
-cond::= expr: e1 LE expr:e2
-{: RESULT = new CompCond(e1, CompCond.LE, e2, loc(e1left,e1right)); :}
-|e1 GE expr:e2
-{: RESULT = new CompCond(e1, CompCond.GE, e2, loc(e1left,e1right)); :}
-|e1 LT expr:e2
-{: RESULT = new CompCond(e1, CompCond.LT, e2, loc(e1left,e1right)); :}
-|e1 GT expr:e2
-{: RESULT = new CompCond(e1, CompCond.GT, e2, loc(e1left,e1right)); :}
-|e1 EQ expr:e2
-{: RESULT = new CompCond(e1, CompCond.EQ, e2, loc(e1left,e1right)); :}
-|e1 NE expr:e2
-{: RESULT = new CompCond(e1, CompCond.NE, e2, loc(e1left,e1right)); :}
-| cond: e1 AND cond:e2
-{:RESULT= new LogicalCond(e1,LogicalCond.AND, e2, loc(e1left,e1right)); :}
-| cond: e1 OR cond:e2
-{:RESULT= new LogicalCond(e1,LogicalCond.OR, e2, loc(e1left,e1right)); :}
-| NOT cond: e
-{:RESULT= new LogicalCond(e,LogicalCond.NOT, null, loc(eleft,eright)); :}
-| LPAREN cond:c RPAREN
-{: RESULT = c; :}
-;
+cond ::=
+    expr:e1 LE expr:e2
+        {: RESULT = new CompCond(e1, CompCond.LE, e2, loc(e1left,e1right)); :}
+  | expr:e1 GE expr:e2
+        {: RESULT = new CompCond(e1, CompCond.GE, e2, loc(e1left,e1right)); :}
+  | expr:e1 LT expr:e2
+        {: RESULT = new CompCond(e1, CompCond.LT, e2, loc(e1left,e1right)); :}
+  | expr:e1 GT expr:e2
+        {: RESULT = new CompCond(e1, CompCond.GT, e2, loc(e1left,e1right)); :}
+  | expr:e1 EQ expr:e2
+        {: RESULT = new CompCond(e1, CompCond.EQ, e2, loc(e1left,e1right)); :}
+  | expr:e1 NE expr:e2
+        {: RESULT = new CompCond(e1, CompCond.NE, e2, loc(e1left,e1right)); :}
+  | cond:e1 AND cond:e2
+        {: RESULT = new LogicalCond(e1, LogicalCond.AND, e2, loc(e1left,e1right)); :}
+  | cond:e1 OR cond:e2
+        {: RESULT = new LogicalCond(e1, LogicalCond.OR, e2, loc(e1left,e1right)); :}
+  | NOT cond:e
+        {: RESULT = new LogicalCond(e, LogicalCond.NOT, null, loc(eleft,eright)); :}
+  | LPAREN cond:c RPAREN
+        {: RESULT = c; :}
+  ;

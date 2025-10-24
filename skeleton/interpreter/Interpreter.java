@@ -125,7 +125,24 @@ public class Interpreter {
             env.put(s.getVarName(),(long)evaluate(s.getExpr(),env));
             return null;
         }
-        return evaluate(((ReturnStmt)stmt).getExpr(),env);
+        else if(stmt instanceof IfStmt){
+            IfStmt ifstmt = (IfStmt)stmt;
+            HashMap<String,Long> localenv = new HashMap<>(env);
+            if(evaluate(ifstmt.getCond(), env)){
+                return executeStmt(ifstmt.getThenStmt(),localenv);
+            }else if (ifstmt.getElseStmt()!=null){
+                return executeStmt(ifstmt.getElseStmt(),localenv);
+            }
+        }else if(stmt instanceof PrintStmt){
+            PrintStmt print = (PrintStmt)stmt;
+            System.out.println(evaluate(print.getExpr(),env));
+            return null;
+        }else if(stmt instanceof ReturnStmt){
+             return evaluate(((ReturnStmt)stmt).getExpr(),env);
+        }else{
+            throw new RuntimeException();
+        }
+        return null;
     }
 
     Object evaluate(Expr expr, HashMap<String, Long> env) {
@@ -144,14 +161,33 @@ public class Interpreter {
         } else if (expr instanceof UnaryMinus) {
             UnaryMinus unaryMinus = (UnaryMinus) expr;
             return -(Long) evaluate(unaryMinus.getExpr(), env);
-        } else if (expr instanceof VarExpr) {
-            String name = ((VarExpr) expr).get_name();
-            if (!env.containsKey(name))
-                throw new RuntimeException("Variable '" + name + "' not declared");
-            return env.get(name);
+        } else if (expr instanceof IdentExpr) {
+           return env.get(((IdentExpr)expr).getVArName());
         } else {
             throw new RuntimeException("Unhandled Expr type");
         }
+    }
+
+    boolean evaluate(ast.Condition cond, HashMap<String, Long> env){
+        if(cond instanceof CompCond){
+            CompCond comp = (CompCond) cond;
+            switch(comp.getOp()){
+                case CompCond.EQ: return (long)evaluate(comp.getLeftExpr(),env)==(long)evaluate(comp.getRightExpr(),env);
+                case CompCond.GT: return (long)evaluate(comp.getLeftExpr(),env)>(long)evaluate(comp.getRightExpr(),env);
+                case CompCond.GE: return (long)evaluate(comp.getLeftExpr(),env)>=(long)evaluate(comp.getRightExpr(),env);
+                case CompCond.LT: return (long)evaluate(comp.getLeftExpr(),env)<(long)evaluate(comp.getRightExpr(),env);
+                case CompCond.LE: return (long)evaluate(comp.getLeftExpr(),env)<=(long)evaluate(comp.getRightExpr(),env);
+                case CompCond.NE: return (long)evaluate(comp.getLeftExpr(),env)!=(long)evaluate(comp.getRightExpr(),env);
+            }
+        }else if (cond instanceof LogicalCond){
+            LogicalCond log = (LogicalCond) cond;
+            switch(log.getOp()){
+                 case LogicalCond.OR: return evaluate(log.getLeftcond(), env) || evaluate(log.getRightcond(), env);
+                 case LogicalCond.AND: return evaluate(log.getLeftcond(), env) && evaluate(log.getRightcond(), env);
+                 case LogicalCond.NOT: return !evaluate(log.getLeftcond(), env);
+            }
+        }
+        throw new RuntimeException();
     }
 
     public static void fatalError(String message, int processReturnCode) {
