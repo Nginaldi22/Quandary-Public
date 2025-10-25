@@ -87,6 +87,7 @@ white_space = {new_line} | [ \t\f]
 ">"          {return symbol(">", GT);}
 "!="          {return symbol("!=", NE);}
 "="           {return symbol("=", ASSIGN);}
+","            {return symbol(",", COMMA);}
 {IDENT}      {return symbol("IDENT", IDENT, yytext());}
 
 

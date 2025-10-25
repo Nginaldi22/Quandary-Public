@@ -1,9 +1,10 @@
 package interpreter;
 
 import java.io.*;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Random;
-
 import parser.ParserWrapper;
 import ast.*;
 
@@ -21,6 +22,7 @@ public class Interpreter {
 
     static private Interpreter interpreter;
     HashMap<String, Long> env = new HashMap<>();
+    private final HashMap<String, FuncDef> functions = new HashMap<>();
     public static Interpreter getInterpreter() {
         return interpreter;
     }
@@ -90,111 +92,159 @@ public class Interpreter {
         this.random = new Random();
     }
 
-    void initMemoryManager(String gcType, long heapBytes) {
+    private void initMemoryManager(String gcType, long heapBytes) {
         if (gcType.equals("Explicit")) {
-            throw new RuntimeException("Explicit not implemented");            
+            throw new RuntimeException("Explicit not implemented");
         } else if (gcType.equals("MarkSweep")) {
-            throw new RuntimeException("MarkSweep not implemented");            
+            throw new RuntimeException("MarkSweep not implemented");
         } else if (gcType.equals("RefCount")) {
-            throw new RuntimeException("RefCount not implemented");            
+            throw new RuntimeException("RefCount not implemented");
         } else if (gcType.equals("NoGC")) {
-            // Nothing to do
+            // nothing
+        }
+    }
+
+    /** Build function table from the Program's FuncDefList (recursive list) */
+    private void loadFunctionsFromProgram(Program program) {
+        FuncDefList fl = program.getFuncDefList();
+        // If your Program class uses a different field name, adjust here.
+        while (fl != null) {
+            FuncDef f = fl.getFuncDef();
+            String name = f.getName();
+            if (functions.containsKey(name)) {
+                fatalError("Duplicate function definition: " + name, EXIT_STATIC_CHECKING_ERROR);
+            }
+            functions.put(name, f);
+            fl = fl.getRest();
         }
     }
 
     Object executeRoot(Program astRoot, long arg) {
+        loadFunctionsFromProgram(astRoot);
+        FuncDef mainFunc = functions.get("main");
         HashMap<String, Long> env = new HashMap<>();
-        env.put(astRoot.get_name(), arg);
-        return executeStmt(astRoot.getstmtList(), env);
+        List<VarDecl> params = mainFunc.getParams();
+        env.put(params.get(0).getIdent(), arg); //put first param in
+        return executeStmt(mainFunc.getBody(), env);
     }
-
-
     Object executeStmt(Stmt stmt, HashMap<String, Long> env) {
-        if(stmt instanceof StmtList){
-            StmtList sl = (StmtList)stmt;
-            Object retVal = executeStmt(sl.getStmt(), env);
-            if(retVal!=null){
-                return retVal;
-            }
-            if(sl.getrest()!=null){
-                return executeStmt(sl.getrest(),env);
+        if (stmt == null) return null;
+        if (stmt instanceof StmtList) {
+            StmtList sl = (StmtList) stmt;
+            Object check = executeStmt(sl.getStmt(), env);
+            if (check != null) return check;
+            if (sl.getrest() != null) return executeStmt(sl.getrest(), env);
+            return null;
+        }else if (stmt instanceof DeclStmt) {
+            DeclStmt s = (DeclStmt) stmt;
+            long val = ((Number) evaluate(s.getExpr(), env)).longValue();
+            env.put(s.getVarName(), val);
+            return null;
+        }else if (stmt instanceof IfStmt) {
+            IfStmt s = (IfStmt) stmt;
+            boolean cond = evaluate(s.getCond(), env);
+            if (cond) {
+                return executeStmt(s.getThenStmt(), new HashMap<>(env));
+            } else if (s.getElseStmt() != null) {
+                return executeStmt(s.getElseStmt(), new HashMap<>(env));
             }
             return null;
-        }else if (stmt instanceof DeclStmt){
-            DeclStmt s = (DeclStmt)stmt;
-            env.put(s.getVarName(),(long)evaluate(s.getExpr(),env));
+        }else if (stmt instanceof PrintStmt) {
+            PrintStmt p = (PrintStmt) stmt;
+            Object v = evaluate(p.getExpr(), env);
+            System.out.println(v);
             return null;
-        }
-        else if(stmt instanceof IfStmt){
-            IfStmt ifstmt = (IfStmt)stmt;
-            HashMap<String,Long> localenv = new HashMap<>(env);
-            if(evaluate(ifstmt.getCond(), env)){
-                return executeStmt(ifstmt.getThenStmt(),localenv);
-            }else if (ifstmt.getElseStmt()!=null){
-                return executeStmt(ifstmt.getElseStmt(),localenv);
-            }
-        }else if(stmt instanceof PrintStmt){
-            PrintStmt print = (PrintStmt)stmt;
-            System.out.println(evaluate(print.getExpr(),env));
-            return null;
-        }else if(stmt instanceof ReturnStmt){
-             return evaluate(((ReturnStmt)stmt).getExpr(),env);
-        }else{
-            throw new RuntimeException();
+        }else if (stmt instanceof ReturnStmt) {
+            ReturnStmt r = (ReturnStmt) stmt;
+            return evaluate(r.getExpr(), env);
         }
         return null;
     }
-
     Object evaluate(Expr expr, HashMap<String, Long> env) {
         if (expr instanceof ConstExpr) {
-            return ((ConstExpr) expr).getValue();
-        } else if (expr instanceof BinaryExpr) {
-            BinaryExpr binaryExpr = (BinaryExpr) expr;
-            long left = (Long) evaluate(binaryExpr.getLeftExpr(), env);
-            long right = (Long) evaluate(binaryExpr.getRightExpr(), env);
-            switch (binaryExpr.getOperator()) {
-                case BinaryExpr.PLUS: return left + right;
+            Object type= ((ConstExpr) expr).getValue();
+                return (long)type;
+        }else if (expr instanceof BinaryExpr) {
+            BinaryExpr b = (BinaryExpr) expr;
+            long left = ((long) evaluate(b.getLeftExpr(), env));
+            long right = ((long) evaluate(b.getRightExpr(), env));
+            int op = b.getOperator();
+            switch (op) {
+                case BinaryExpr.PLUS:  return left + right;
                 case BinaryExpr.MINUS: return left - right;
-                case BinaryExpr.MULT: return left * right;
-                default: throw new RuntimeException("Unhandled operator");
+                case BinaryExpr.MULT:  return left * right;
+                default: throw new RuntimeException("Unhandled binary operator: " + op);
             }
-        } else if (expr instanceof UnaryMinus) {
-            UnaryMinus unaryMinus = (UnaryMinus) expr;
-            return -(Long) evaluate(unaryMinus.getExpr(), env);
-        } else if (expr instanceof IdentExpr) {
-           return env.get(((IdentExpr)expr).getVArName());
-        } else {
-            throw new RuntimeException("Unhandled Expr type");
+        }else if (expr instanceof UnaryMinus) {
+            UnaryMinus u = (UnaryMinus) expr;
+            return -((long) evaluate(u.getExpr(), env));
+        }else if (expr instanceof IdentExpr) {
+            IdentExpr id = (IdentExpr) expr;
+            String name = id.getVArName();
+            if (!env.containsKey(name))
+                throw new RuntimeException("Undefined variable: " + name);
+            return env.get(name);
+        }else if (expr instanceof CallExpr) {
+            CallExpr call = (CallExpr) expr;
+            String fname = call.getFuncName();
+            if ("randomInt".equals(fname)) {
+                if (call.getArgs() != null && call.getArgs().size() != 0) {
+                    fatalError("randomInt() takes no args", EXIT_DYNAMIC_TYPE_ERROR);
+                }
+                return (long) random.nextInt(100);
+            }
+            FuncDef fd = functions.get(fname);
+            if (fd == null) {
+                throw new RuntimeException("Undefined function: " + fname);
+            }
+            List<Expr> args = call.getArgs();
+            List<VarDecl> params = fd.getParams();
+            if (args == null) args = new ArrayList<>();
+            if (params == null) params = new ArrayList<>();
+            HashMap<String, Long> newEnv = new HashMap<>();
+            for (int i = 0; i < args.size(); i++) {
+                Object aval = evaluate(args.get(i), env);
+                long avalLong = ((Number) aval).longValue();
+                newEnv.put(params.get(i).getIdent(), avalLong);
+            }
+            Object ret = executeStmt(fd.getBody(), newEnv);
+            return (ret == null ? 0L : ((Number) ret).longValue());
         }
-    }
 
-    boolean evaluate(ast.Condition cond, HashMap<String, Long> env){
-        if(cond instanceof CompCond){
-            CompCond comp = (CompCond) cond;
-            switch(comp.getOp()){
-                case CompCond.EQ: return (long)evaluate(comp.getLeftExpr(),env)==(long)evaluate(comp.getRightExpr(),env);
-                case CompCond.GT: return (long)evaluate(comp.getLeftExpr(),env)>(long)evaluate(comp.getRightExpr(),env);
-                case CompCond.GE: return (long)evaluate(comp.getLeftExpr(),env)>=(long)evaluate(comp.getRightExpr(),env);
-                case CompCond.LT: return (long)evaluate(comp.getLeftExpr(),env)<(long)evaluate(comp.getRightExpr(),env);
-                case CompCond.LE: return (long)evaluate(comp.getLeftExpr(),env)<=(long)evaluate(comp.getRightExpr(),env);
-                case CompCond.NE: return (long)evaluate(comp.getLeftExpr(),env)!=(long)evaluate(comp.getRightExpr(),env);
+        throw new RuntimeException("Unhandled Expr type: " + expr.getClass().getName());
+    }
+    boolean evaluate(ast.Condition cond, HashMap<String, Long> env) {
+        if (cond instanceof CompCond) {
+            CompCond c = (CompCond) cond;
+            long left = ((long) evaluate(c.getLeftExpr(), env));
+            long right = ((long) evaluate(c.getRightExpr(), env));
+            switch (c.getOp()) {
+                case CompCond.EQ: return left == right;
+                case CompCond.GT: return left > right;
+                case CompCond.GE: return left >= right;
+                case CompCond.LT: return left < right;
+                case CompCond.LE: return left <= right;
+                case CompCond.NE: return left != right;
+                default: throw new RuntimeException("Unhandled comp op: " + c.getOp());
             }
-        }else if (cond instanceof LogicalCond){
-            LogicalCond log = (LogicalCond) cond;
-            switch(log.getOp()){
-                 case LogicalCond.OR: return evaluate(log.getLeftcond(), env) || evaluate(log.getRightcond(), env);
-                 case LogicalCond.AND: return evaluate(log.getLeftcond(), env) && evaluate(log.getRightcond(), env);
-                 case LogicalCond.NOT: return !evaluate(log.getLeftcond(), env);
+        } else if (cond instanceof LogicalCond) {
+            LogicalCond l = (LogicalCond) cond;
+            switch (l.getOp()) {
+                case LogicalCond.OR:
+                    return evaluate(l.getLeftcond(), env) || evaluate(l.getRightcond(), env);
+                case LogicalCond.AND:
+                    return evaluate(l.getLeftcond(), env) && evaluate(l.getRightcond(), env);
+                case LogicalCond.NOT:
+                    return !evaluate(l.getLeftcond(), env);
+                default:
+                    throw new RuntimeException("Unhandled logical");
             }
         }
-        throw new RuntimeException();
+        throw new RuntimeException("Unhandled Condition type: " + cond.getClass().getName());
     }
 
     public static void fatalError(String message, int processReturnCode) {
         System.out.println(message);
         System.exit(processReturnCode);
     }
-
-   
-    
 }

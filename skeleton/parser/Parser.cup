@@ -28,7 +28,7 @@ parser code {:
 :};
 
 terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LT, GT, 
-NOT, EQ, LE, GE, AND, OR, NE,ASSIGN;
+NOT, EQ, LE, GE, AND, OR, NE,ASSIGN,COMMA;
 terminal Long    INTCONST;
 terminal String IDENT;
 terminal  UMINUS;
@@ -38,6 +38,14 @@ non terminal BinaryExpr      binaryExpr;
 non terminal Stmt            stmt;
 non terminal StmtList        stmt_list;
 non terminal Condition       cond;
+non terminal FuncDef funcDef;
+non terminal FuncDefList funcDefList;
+non terminal VarDecl varDecl;
+non terminal Type type;
+non terminal java.util.ArrayList<Expr> exprList;
+non terminal java.util.ArrayList<Expr> neExprList;
+non terminal java.util.ArrayList<VarDecl> formalDeclList;
+non terminal java.util.ArrayList<VarDecl> neFormalDeclList;
 precedence left OR;
 precedence left AND;
 precedence left NOT;
@@ -50,9 +58,52 @@ precedence left ELSE;
 
 start with program;
 
-program ::= INT IDENT LPAREN INT IDENT: param RPAREN LEFT_CURL stmt_list:slist RIGHT_CURL
-            {: RESULT = new Program(slist, param, loc(slistleft, slistright)); :}
-         ;
+program ::= funcDefList:fl
+            {: RESULT = new Program(fl, loc(flleft, flright)); :}
+          ;
+
+funcDefList ::=
+      funcDef:f funcDefList:fl
+        {: RESULT = new FuncDefList(f, fl, loc(fleft, fright)); :}
+    | /* empty */
+        {: RESULT = null; :}
+    ;
+
+funcDef ::= varDecl:vd LPAREN formalDeclList:fl RPAREN LEFT_CURL stmt_list:sl RIGHT_CURL
+             {: RESULT = new FuncDef(vd, fl, sl, loc(vdleft, vdright)); :}
+          ;
+
+formalDeclList ::=
+      neFormalDeclList:fl
+        {: RESULT = fl; :}
+    | /* empty */
+        {: RESULT = new ArrayList<VarDecl>(); :}
+    ;
+
+neFormalDeclList ::=
+      varDecl:vd COMMA neFormalDeclList:fl
+        {: 
+           ArrayList<VarDecl> list = new ArrayList<>();
+           list.add(vd);
+           list.addAll(fl);
+           RESULT = list;
+         :}
+    | varDecl:vd
+        {:
+           ArrayList<VarDecl> list = new ArrayList<>();
+           list.add(vd);
+           RESULT = list;
+         :}
+    ;
+
+varDecl ::= type:t IDENT:id
+             {: RESULT = new VarDecl(t, id, loc(tleft, tright)); :}
+          ;
+
+
+type ::= INT {: RESULT = new Type(Type.INT); :}
+       ;
+
 
 stmt_list::= stmt:s stmt_list:slist
 {: RESULT = new StmtList(s,slist,loc(sleft,sright)); :}
@@ -86,7 +137,35 @@ expr ::=
       {: RESULT = e; :}
   | IDENT: varName
     {: RESULT = new IdentExpr(varName, loc(varNameleft, varNameright)); :}
+  | IDENT:fn LPAREN exprList:args RPAREN
+    {: RESULT = new CallExpr(fn, args, loc(fnleft, fnright)); :}
+
   ;
+
+  exprList ::=
+      neExprList:el
+        {: RESULT = el; :}
+    | /* empty */
+        {: RESULT = new ArrayList<Expr>(); :}
+    ;
+    
+neExprList ::=
+      expr:e COMMA neExprList:el
+        {:
+           ArrayList<Expr> list = new ArrayList<>();
+           list.add(e);
+           list.addAll(el);
+           RESULT = list;
+         :}
+    | expr:e
+        {:
+           ArrayList<Expr> list = new ArrayList<>();
+           list.add(e);
+           RESULT = list;
+         :}
+    ;
+
+
 
 binaryExpr ::= expr:e1 PLUS expr:e2
                {: RESULT = new BinaryExpr(e1, BinaryExpr.PLUS, e2, loc(e1left, e1right)); :}
@@ -118,3 +197,4 @@ cond ::=
   | LPAREN cond:c RPAREN
         {: RESULT = c; :}
   ;
+
