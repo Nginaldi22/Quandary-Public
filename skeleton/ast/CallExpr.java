@@ -1,11 +1,10 @@
 package ast;
-import java.util.*;
 
 public class CallExpr extends Expr {
     String funcName;
-    List<Expr> args;
+    ExprList args;
 
-    public CallExpr(String funcName, List<Expr> args, Location loc) {
+    public CallExpr(String funcName, ExprList args, Location loc) {
         super(loc);
         this.funcName = funcName;
         this.args = args;
@@ -14,7 +13,7 @@ public class CallExpr extends Expr {
     public String getFuncName() { 
         return funcName; 
     }
-    public List<Expr> getArgs() {
+    public ExprList getArgs() {
          return args; 
         }
 }

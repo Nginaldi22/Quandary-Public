@@ -1,13 +1,12 @@
 package ast;
-import java.util.*;
 
 public class FuncDef {
     VarDecl header;
-    List<VarDecl> params;
+    FormalDeclList params;
     StmtList body;
     Location loc;
 
-    public FuncDef(VarDecl header, List<VarDecl> params, StmtList body, Location loc) {
+    public FuncDef(VarDecl header, FormalDeclList params, StmtList body, Location loc) {
         this.header = header;
         this.params = params;
         this.body = body;
@@ -18,7 +17,7 @@ public class FuncDef {
      return header.getIdent();
     }
     
-    public List<VarDecl> getParams() { 
+    public FormalDeclList getParams() { 
         return params; 
     }
     public StmtList getBody() { 

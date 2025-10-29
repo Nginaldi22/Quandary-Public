@@ -108,8 +108,8 @@ public class Interpreter {
         loadFunctionsFromProgram(astRoot);
         FuncDef mainFunc = functions.get("main");
         HashMap<String, Long> env = new HashMap<>();
-        List<VarDecl> params = mainFunc.getParams();
-        env.put(params.get(0).getIdent(), arg); 
+        FormalDeclList params = mainFunc.getParams();
+        env.put(params.getList().getvar().getIdent(), arg); 
         return executeStmt(mainFunc.getBody(), env);
     }
 
@@ -190,16 +190,30 @@ public class Interpreter {
             return env.get(name);
         }else if (expr instanceof CallExpr) {
             CallExpr call = (CallExpr) expr;
+            List<Expr> args = new ArrayList<>();
+            ExprList temp = call.getArgs();
+            if (temp != null && temp.getList() != null) {
+                NeExprList node = temp.getList();
+                    while (node != null) {
+                    args.add(node.getExpr());
+                     node = node.getRest();
+                }      
+            }   
             String fname = call.getFuncName();
             if ("randomInt".equals(fname)) {
-                long bound = (long) evaluate(call.getArgs().get(0), env);
+                long bound = (long) evaluate(args.get(0), env);
                 return (long) random.nextInt((int) bound);
             }
             FuncDef fd = functions.get(fname);
-            List<Expr> args = call.getArgs();
-            List<VarDecl> params = fd.getParams();
-            if (args == null) args = new ArrayList<>();
-            if (params == null) params = new ArrayList<>();
+            List<VarDecl> params = new ArrayList<>();
+            FormalDeclList temp2 = fd.getParams();
+            if (temp2 != null && temp2.getList() != null) {
+                NeFormalDeclList node = temp2.getList();
+                    while (node != null) {
+                    params.add(node.getvar());
+                     node = node.getRest();
+                }      
+            }   
             HashMap<String, Long> newEnv = new HashMap<>();
             for (int i = 0; i < args.size(); i++) {
                 Object aval = evaluate(args.get(i), env);

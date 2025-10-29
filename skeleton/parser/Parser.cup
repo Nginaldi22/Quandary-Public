@@ -42,10 +42,10 @@ non terminal FuncDef funcDef;
 non terminal FuncDefList funcDefList;
 non terminal VarDecl varDecl;
 non terminal Type type;
-non terminal java.util.ArrayList<Expr> exprList;
-non terminal java.util.ArrayList<Expr> neExprList;
-non terminal java.util.ArrayList<VarDecl> formalDeclList;
-non terminal java.util.ArrayList<VarDecl> neFormalDeclList;
+non terminal ExprList exprList;
+non terminal NeExprList neExprList;
+non terminal FormalDeclList formalDeclList;
+non terminal NeFormalDeclList neFormalDeclList;
 precedence left OR;
 precedence left AND;
 precedence left NOT;
@@ -75,25 +75,16 @@ funcDef ::= varDecl:vd LPAREN formalDeclList:fl RPAREN LEFT_CURL stmt_list:sl RI
 
 formalDeclList ::=
       neFormalDeclList:fl
-        {: RESULT = fl; :}
+       {: RESULT = new FormalDeclList(fl,loc(flleft,flright)); :}
     | /* empty */
-        {: RESULT = new ArrayList<VarDecl>(); :}
+        {: RESULT = null; :}
     ;
 
 neFormalDeclList ::=
       varDecl:vd COMMA neFormalDeclList:fl
-        {: 
-           ArrayList<VarDecl> list = new ArrayList<>();
-           list.add(vd);
-           list.addAll(fl);
-           RESULT = list;
-         :}
+         {: RESULT = new NeFormalDeclList(vd,fl, loc(vdleft,vdright)); :}
     | varDecl:vd
-        {:
-           ArrayList<VarDecl> list = new ArrayList<>();
-           list.add(vd);
-           RESULT = list;
-         :}
+         {: RESULT = new NeFormalDeclList(vd,null, loc(vdleft,vdright)); :}
     ;
 
 varDecl ::= type:t IDENT:id
@@ -144,25 +135,16 @@ expr ::=
 
   exprList ::=
       neExprList:el
-        {: RESULT = el; :}
+        {: RESULT = new ExprList(el,loc(elleft,elright)); :}
     | /* empty */
-        {: RESULT = new ArrayList<Expr>(); :}
+        {: RESULT = null; :}
     ;
     
 neExprList ::=
       expr:e COMMA neExprList:el
-        {:
-           ArrayList<Expr> list = new ArrayList<>();
-           list.add(e);
-           list.addAll(el);
-           RESULT = list;
-         :}
+        {: RESULT = new NeExprList(e,el, loc(eleft,eright)); :}
     | expr:e
-        {:
-           ArrayList<Expr> list = new ArrayList<>();
-           list.add(e);
-           RESULT = list;
-         :}
+         {: RESULT = new NeExprList(e,null,loc(eleft,eright)); :}
     ;
 
 
