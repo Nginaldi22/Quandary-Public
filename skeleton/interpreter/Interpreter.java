@@ -216,9 +216,7 @@ public class Interpreter {
             }   
             HashMap<String, Long> newEnv = new HashMap<>();
             for (int i = 0; i < args.size(); i++) {
-                Object aval = evaluate(args.get(i), env);
-                long avalLong = ((long) aval);
-                newEnv.put(params.get(i).getIdent(), avalLong);
+                newEnv.put(params.get(i).getIdent(), (long)evaluate(args.get(i), env));
             }
             return (long)executeStmt(fd.getBody(), newEnv);
 
