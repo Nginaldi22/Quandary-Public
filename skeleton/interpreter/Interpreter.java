@@ -125,10 +125,8 @@ public class Interpreter {
 
     Object executeStmt(Stmt stmt, HashMap<String, Long> env) {
         if (stmt == null){
-
          return null;
-        }
-       else if (stmt instanceof StmtList) {
+        } else if (stmt instanceof StmtList) {
             StmtList sl = (StmtList) stmt;
             Object check = executeStmt(sl.getStmt(), env);
             if (check != null){
