@@ -22,7 +22,7 @@ public class Interpreter {
 
     static private Interpreter interpreter;
     HashMap<String, Long> env = new HashMap<>();
-    private final HashMap<String, FuncDef> functions = new HashMap<>();
+    HashMap<String, FuncDef> functions = new HashMap<>();
     public static Interpreter getInterpreter() {
         return interpreter;
     }
@@ -104,40 +104,43 @@ public class Interpreter {
         }
     }
 
-    /** Build function table from the Program's FuncDefList (recursive list) */
-    private void loadFunctionsFromProgram(Program program) {
-        FuncDefList fl = program.getFuncDefList();
-        // If your Program class uses a different field name, adjust here.
-        while (fl != null) {
-            FuncDef f = fl.getFuncDef();
-            String name = f.getName();
-            if (functions.containsKey(name)) {
-                fatalError("Duplicate function definition: " + name, EXIT_STATIC_CHECKING_ERROR);
-            }
-            functions.put(name, f);
-            fl = fl.getRest();
-        }
-    }
-
     Object executeRoot(Program astRoot, long arg) {
         loadFunctionsFromProgram(astRoot);
         FuncDef mainFunc = functions.get("main");
         HashMap<String, Long> env = new HashMap<>();
         List<VarDecl> params = mainFunc.getParams();
-        env.put(params.get(0).getIdent(), arg); //put first param in
+        env.put(params.get(0).getIdent(), arg); 
         return executeStmt(mainFunc.getBody(), env);
     }
+
+    private void loadFunctionsFromProgram(Program program) {
+        FuncDefList fl = program.getFuncDefList();
+        while (fl != null) {
+            FuncDef f = fl.getFuncDef();
+            String name = f.getName();
+            functions.put(name, f);
+            fl = fl.getRest();
+        }
+    }
+
     Object executeStmt(Stmt stmt, HashMap<String, Long> env) {
-        if (stmt == null) return null;
-        if (stmt instanceof StmtList) {
+        if (stmt == null){
+
+         return null;
+        }
+       else if (stmt instanceof StmtList) {
             StmtList sl = (StmtList) stmt;
             Object check = executeStmt(sl.getStmt(), env);
-            if (check != null) return check;
-            if (sl.getrest() != null) return executeStmt(sl.getrest(), env);
+            if (check != null){
+                return check;
+            }
+            if (sl.getrest() != null){
+             return executeStmt(sl.getrest(), env);
+            }
             return null;
         }else if (stmt instanceof DeclStmt) {
             DeclStmt s = (DeclStmt) stmt;
-            long val = ((Number) evaluate(s.getExpr(), env)).longValue();
+            long val = ((long) evaluate(s.getExpr(), env));
             env.put(s.getVarName(), val);
             return null;
         }else if (stmt instanceof IfStmt) {
@@ -160,10 +163,11 @@ public class Interpreter {
         }
         return null;
     }
+
     Object evaluate(Expr expr, HashMap<String, Long> env) {
         if (expr instanceof ConstExpr) {
             Object type= ((ConstExpr) expr).getValue();
-                return (long)type;
+            return (long)type;
         }else if (expr instanceof BinaryExpr) {
             BinaryExpr b = (BinaryExpr) expr;
             long left = ((long) evaluate(b.getLeftExpr(), env));
@@ -188,15 +192,10 @@ public class Interpreter {
             CallExpr call = (CallExpr) expr;
             String fname = call.getFuncName();
             if ("randomInt".equals(fname)) {
-                if (call.getArgs() != null && call.getArgs().size() != 0) {
-                    fatalError("randomInt() takes no args", EXIT_DYNAMIC_TYPE_ERROR);
-                }
-                return (long) random.nextInt(100);
+                long bound = (long) evaluate(call.getArgs().get(0), env);
+                return (long) random.nextInt((int) bound);
             }
             FuncDef fd = functions.get(fname);
-            if (fd == null) {
-                throw new RuntimeException("Undefined function: " + fname);
-            }
             List<Expr> args = call.getArgs();
             List<VarDecl> params = fd.getParams();
             if (args == null) args = new ArrayList<>();
@@ -207,8 +206,8 @@ public class Interpreter {
                 long avalLong = ((Number) aval).longValue();
                 newEnv.put(params.get(i).getIdent(), avalLong);
             }
-            Object ret = executeStmt(fd.getBody(), newEnv);
-            return (ret == null ? 0L : ((Number) ret).longValue());
+            return (long)executeStmt(fd.getBody(), newEnv);
+
         }
 
         throw new RuntimeException("Unhandled Expr type: " + expr.getClass().getName());
