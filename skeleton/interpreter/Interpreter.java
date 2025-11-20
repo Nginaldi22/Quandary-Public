@@ -150,7 +150,21 @@ public class Interpreter {
                 return executeStmt(s.getElseStmt(), new HashMap<>(env));
             }
             return null;
-        }else if (stmt instanceof PrintStmt) {
+        }else if (stmt instanceof WhileStmt){
+            WhileStmt w = (WhileStmt) stmt;
+            while (evaluate(w.getCond(), env)) {
+            Object result = executeStmt(w.getStmt(), env);
+            if (result != null) {
+                 return result;
+             }
+            }
+            return null;
+        }else if(stmt instanceof CallStmt){
+            CallStmt cs = (CallStmt) stmt;
+            evaluate(cs.getCall(), env);
+            return null;
+        }
+        else if (stmt instanceof PrintStmt) {
             PrintStmt p = (PrintStmt) stmt;
             Object v = evaluate(p.getExpr(), env);
             System.out.println(v);

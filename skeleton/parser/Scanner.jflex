@@ -88,6 +88,9 @@ white_space = {new_line} | [ \t\f]
 "!="          {return symbol("!=", NE);}
 "="           {return symbol("=", ASSIGN);}
 ","            {return symbol(",", COMMA);}
+"while"        {return symbol("while",WHILE);}
+"mutable"      {return symbol("mutable", MUTABLE); }
+"Ref"          {return symbol ("Ref", REF);}
 {IDENT}      {return symbol("IDENT", IDENT, yytext());}
 
 

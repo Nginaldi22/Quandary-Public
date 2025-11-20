@@ -28,7 +28,7 @@ parser code {:
 :};
 
 terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LT, GT, 
-NOT, EQ, LE, GE, AND, OR, NE,ASSIGN,COMMA;
+NOT, EQ, LE, GE, AND, OR, NE,ASSIGN,COMMA, WHILE, MUTABLE, REF;
 terminal Long    INTCONST;
 terminal String IDENT;
 terminal  UMINUS;
@@ -89,10 +89,15 @@ neFormalDeclList ::=
 
 varDecl ::= type:t IDENT:id
              {: RESULT = new VarDecl(t, id, loc(tleft, tright)); :}
+            | MUTABLE type:t IDENT: id
+            {: RESULT = new VarDecl(t, id, loc(tleft, tright)); :}
           ;
 
 
-type ::= INT {: RESULT = new Type(Type.INT); :}
+type ::= INT 
+        {: RESULT = new Type(Type.INT); :}
+        | REF
+        {: RESULT = new Type(Type.REF); :}
        ;
 
 
@@ -102,8 +107,8 @@ stmt_list::= stmt:s stmt_list:slist
 {: RESULT =null; :}
   ;
 
-stmt ::= INT IDENT: varName ASSIGN expr: e SEMI_COLON
-{: RESULT= new DeclStmt(varName, e, loc(varNameleft,varNameright)); :}
+stmt ::= varDecl:vd ASSIGN expr:e SEMI_COLON
+{: RESULT = new DeclStmt(vd.getIdent(), e, loc(vdleft, vdright)); :}
 | IF LPAREN cond: c RPAREN stmt:s
 {: RESULT= new IfStmt(c,s,null,loc(cleft,cright)); :}
 | IF LPAREN cond: c RPAREN stmt:s1 ELSE stmt: s2
@@ -114,6 +119,12 @@ stmt ::= INT IDENT: varName ASSIGN expr: e SEMI_COLON
 {:RESULT = new ReturnStmt(e,loc(eleft,eright)); :}
 | LEFT_CURL stmt_list: sl RIGHT_CURL
 {: RESULT = sl; :}
+| WHILE LPAREN cond: c RPAREN stmt: s
+{: RESULT = new WhileStmt(c,s,loc(cleft,cright)); :}
+| IDENT: id ASSIGN expr: e SEMI_COLON
+  {: RESULT= new DeclStmt(id, e, loc(idleft,idright)); :}
+| IDENT:fn LPAREN exprList:args RPAREN SEMI_COLON
+{: RESULT = new CallStmt(new CallExpr(fn, args, loc(fnleft, fnright)),loc(fnleft, fnright)); :}
 ;
 
 expr ::=

@@ -1,7 +1,12 @@
 int main(int arg){
-    print 100;
-    if((5<2 && 5<4)|| 7<6){
-        print 200;
+    mutable int x =3;
+    while(x>0){
+        print 100;
+        x=x-1;
     }
-    return 10;
+    return test(100);
+}
+
+int test(int arg){
+    return arg;
 }
