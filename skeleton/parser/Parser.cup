@@ -28,7 +28,7 @@ parser code {:
 :};
 
 terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LT, GT, 
-NOT, EQ, LE, GE, AND, OR, NE,ASSIGN,COMMA, WHILE, MUTABLE, REF;
+NOT, EQ, LE, GE, AND, OR, NE,ASSIGN,COMMA, WHILE, MUTABLE, REF, Q, NIL, DOT;
 terminal Long    INTCONST;
 terminal String IDENT;
 terminal  UMINUS;
@@ -50,6 +50,7 @@ precedence left OR;
 precedence left AND;
 precedence left NOT;
 precedence left GE,LE,LT,EQ,NE;
+precedence left DOT;
 precedence left PLUS, MINUS;
 precedence left MULT;
 precedence left UMINUS;
@@ -98,6 +99,8 @@ type ::= INT
         {: RESULT = new Type(Type.INT); :}
         | REF
         {: RESULT = new Type(Type.REF); :}
+        | Q
+        {: RESULT = new Type(Type.Q); :}
        ;
 
 
@@ -141,6 +144,10 @@ expr ::=
     {: RESULT = new IdentExpr(varName, loc(varNameleft, varNameright)); :}
   | IDENT:fn LPAREN exprList:args RPAREN
     {: RESULT = new CallExpr(fn, args, loc(fnleft, fnright)); :}
+  | NIL
+  {: RESULT = new NilExpr(); :}
+  | LPAREN type: t RPAREN expr: e 
+  {:RESULT = e;:}
 
   ;
 
@@ -166,6 +173,8 @@ binaryExpr ::= expr:e1 PLUS expr:e2
                {: RESULT = new BinaryExpr(e1, BinaryExpr.MINUS, e2, loc(e1left, e1right)); :}
                | expr:e1 MULT expr:e2
                {: RESULT = new BinaryExpr(e1, BinaryExpr.MULT, e2, loc(e1left, e1right)); :}
+              | expr:e1 DOT expr:e2
+              {: RESULT = new BinaryExpr(e1, BinaryExpr.DOT, e2, loc(e1left, e1right)); :}
             ;
 
 cond ::=

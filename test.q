@@ -1,12 +1,11 @@
-int main(int arg){
-    mutable int x =3;
-    while(x>0){
-        print 100;
-        x=x-1;
+int main(int i){
+    mutable int x =0;
+    Ref a = 7.2;
+    while(x<5){
+        if(0<(int)left(a)){
+            x=x+1;
+        }
+        print x;
     }
-    return test(100);
-}
-
-int test(int arg){
-    return arg;
+    return 0;
 }

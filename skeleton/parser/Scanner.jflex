@@ -91,6 +91,9 @@ white_space = {new_line} | [ \t\f]
 "while"        {return symbol("while",WHILE);}
 "mutable"      {return symbol("mutable", MUTABLE); }
 "Ref"          {return symbol ("Ref", REF);}
+"nil"          {return symbol("nil", NIL);}
+"Q"            {return symbol("Q", Q);}
+"."            {return symbol(".", DOT);}
 {IDENT}      {return symbol("IDENT", IDENT, yytext());}
 
 

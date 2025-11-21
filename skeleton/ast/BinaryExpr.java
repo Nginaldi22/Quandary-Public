@@ -5,6 +5,7 @@ public class BinaryExpr extends Expr {
     public static final int PLUS = 1;
     public static final int MINUS = 2;
     public static final int MULT =3;
+    public static final int DOT=4;
 
     final Expr expr1;
     final int operator;
@@ -36,6 +37,7 @@ public class BinaryExpr extends Expr {
             case PLUS:  s = "+"; break;
             case MINUS: s = "-"; break;
             case MULT: s="*"; break;
+             case DOT: s="."; break;
         }
         return "(" + expr1 + " " + s + " " + expr2 + ")";
     }

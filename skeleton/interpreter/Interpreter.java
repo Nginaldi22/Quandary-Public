@@ -20,9 +20,52 @@ public class Interpreter {
     public static final int EXIT_DATA_RACE_ERROR = 6;
     public static final int EXIT_NONDETERMINISM_ERROR = 7;
 
+    public static abstract class Q { }
+
+    public static class IntValue extends Q {
+        private final long value;
+        public IntValue(long value) { 
+            this.value = value; 
+        }
+        public long get() { return value; }
+        @Override public String toString() { return Long.toString(value); }
+    }
+
+    private static class Ref extends Q {
+        private Q left;
+        private Q right;
+         
+        public Ref(Q left, Q right) {
+             this.left = left; this.right = right; 
+        }
+        
+        public Q getLeft() { 
+            return left; 
+        }
+        public Q getRight() {
+             return right; 
+        }
+        public void setLeft(Q val){
+            this.left=val;
+        }
+        public void setRight(Q val){
+            this.right=val;
+        }
+        
+    }
+    public static class NilRef extends Q{
+        private String nil;
+        public NilRef(){
+            this.nil="nil";
+        }
+        public String get_val(){
+            return nil;
+        }
+    }
+
     static private Interpreter interpreter;
-    HashMap<String, Long> env = new HashMap<>();
     HashMap<String, FuncDef> functions = new HashMap<>();
+
     public static Interpreter getInterpreter() {
         return interpreter;
     }
@@ -104,13 +147,15 @@ public class Interpreter {
         }
     }
 
+  
     Object executeRoot(Program astRoot, long arg) {
         loadFunctionsFromProgram(astRoot);
         FuncDef mainFunc = functions.get("main");
-        HashMap<String, Long> env = new HashMap<>();
+        HashMap<String, Q> env = new HashMap<>();
         FormalDeclList params = mainFunc.getParams();
-        env.put(params.getList().getvar().getIdent(), arg); 
-        return executeStmt(mainFunc.getBody(), env);
+        env.put(params.getList().getvar().getIdent(), new IntValue(arg)); 
+        Q result= executeStmt(mainFunc.getBody(), env);
+        return valueToString(result);
     }
 
     private void loadFunctionsFromProgram(Program program) {
@@ -122,13 +167,12 @@ public class Interpreter {
             fl = fl.getRest();
         }
     }
-
-    Object executeStmt(Stmt stmt, HashMap<String, Long> env) {
-        if (stmt == null){
-         return null;
+        Q executeStmt(Stmt stmt, HashMap<String, Q> env) {
+        if (stmt == null) {
+            return null;
         } else if (stmt instanceof StmtList) {
             StmtList sl = (StmtList) stmt;
-            Object check = executeStmt(sl.getStmt(), env);
+            Q check = executeStmt(sl.getStmt(), env);
             if (check != null){
                 return check;
             }
@@ -136,111 +180,157 @@ public class Interpreter {
              return executeStmt(sl.getrest(), env);
             }
             return null;
-        }else if (stmt instanceof DeclStmt) {
+        } else if (stmt instanceof DeclStmt) {
             DeclStmt s = (DeclStmt) stmt;
-            long val = ((long) evaluate(s.getExpr(), env));
+            Q val = evaluate(s.getExpr(), env);
             env.put(s.getVarName(), val);
             return null;
-        }else if (stmt instanceof IfStmt) {
+        } else if (stmt instanceof IfStmt) {
             IfStmt s = (IfStmt) stmt;
             boolean cond = evaluate(s.getCond(), env);
             if (cond) {
-                return executeStmt(s.getThenStmt(), new HashMap<>(env));
+                return executeStmt(s.getThenStmt(), env);
             } else if (s.getElseStmt() != null) {
-                return executeStmt(s.getElseStmt(), new HashMap<>(env));
+                return executeStmt(s.getElseStmt(), env);
             }
             return null;
-        }else if (stmt instanceof WhileStmt){
+        } else if (stmt instanceof WhileStmt) {
             WhileStmt w = (WhileStmt) stmt;
             while (evaluate(w.getCond(), env)) {
-            Object result = executeStmt(w.getStmt(), env);
-            if (result != null) {
-                 return result;
-             }
+                Q result = executeStmt(w.getStmt(), env);
+                if (result != null) return result;
             }
             return null;
-        }else if(stmt instanceof CallStmt){
+        } else if (stmt instanceof CallStmt) {
             CallStmt cs = (CallStmt) stmt;
-            evaluate(cs.getCall(), env);
+            evaluate(cs.getCall(), env); 
             return null;
-        }
-        else if (stmt instanceof PrintStmt) {
+        } else if (stmt instanceof PrintStmt) {
             PrintStmt p = (PrintStmt) stmt;
-            Object v = evaluate(p.getExpr(), env);
-            System.out.println(v);
+            Q v = evaluate(p.getExpr(), env);
+            System.out.println(valueToString(v));
             return null;
-        }else if (stmt instanceof ReturnStmt) {
+        } else if (stmt instanceof ReturnStmt) {
             ReturnStmt r = (ReturnStmt) stmt;
             return evaluate(r.getExpr(), env);
         }
         return null;
     }
-
-    Object evaluate(Expr expr, HashMap<String, Long> env) {
+    Q evaluate(Expr expr, HashMap<String, Q> env) {
         if (expr instanceof ConstExpr) {
-            Object type= ((ConstExpr) expr).getValue();
-            return (long)type;
-        }else if (expr instanceof BinaryExpr) {
+            Object val = ((ConstExpr) expr).getValue();
+            return new IntValue((long) val);
+        } else if (expr instanceof BinaryExpr) {
             BinaryExpr b = (BinaryExpr) expr;
-            long left = ((long) evaluate(b.getLeftExpr(), env));
-            long right = ((long) evaluate(b.getRightExpr(), env));
             int op = b.getOperator();
-            switch (op) {
-                case BinaryExpr.PLUS:  return left + right;
-                case BinaryExpr.MINUS: return left - right;
-                case BinaryExpr.MULT:  return left * right;
-                default: throw new RuntimeException("Unhandled binary operator: " + op);
+            if (op == BinaryExpr.DOT) {
+                Q leftVal = evaluate(b.getLeftExpr(), env);
+                Q rightVal = evaluate(b.getRightExpr(), env);
+                Ref obj = new Ref(leftVal, rightVal);
+                return obj;
+            } else {
+                Q leftQ = evaluate(b.getLeftExpr(), env);
+                Q rightQ = evaluate(b.getRightExpr(), env);
+                long l = ((IntValue) leftQ).get();
+                long r = ((IntValue) rightQ).get();
+                switch (op) {
+                    case BinaryExpr.PLUS: return new IntValue(l + r);
+                    case BinaryExpr.MINUS: return new IntValue(l - r);
+                    case BinaryExpr.MULT: return new IntValue(l * r);
+                    default: throw new RuntimeException("Unhandled binary operator: " + op);
+                }
             }
-        }else if (expr instanceof UnaryMinus) {
+        } else if (expr instanceof UnaryMinus) {
             UnaryMinus u = (UnaryMinus) expr;
-            return -((long) evaluate(u.getExpr(), env));
-        }else if (expr instanceof IdentExpr) {
+            Q v = evaluate(u.getExpr(), env);
+            return new IntValue(-((IntValue) v).get());
+        } else if (expr instanceof IdentExpr) {
             IdentExpr id = (IdentExpr) expr;
             String name = id.getVArName();
-            if (!env.containsKey(name))
-                throw new RuntimeException("Undefined variable: " + name);
             return env.get(name);
-        }else if (expr instanceof CallExpr) {
+        } else if (expr instanceof CallExpr) {
             CallExpr call = (CallExpr) expr;
-            List<Expr> args = new ArrayList<>();
+            List<Expr> argExprs = new ArrayList<>();
             ExprList temp = call.getArgs();
             if (temp != null && temp.getList() != null) {
                 NeExprList node = temp.getList();
-                    while (node != null) {
-                    args.add(node.getExpr());
-                     node = node.getRest();
-                }      
-            }   
+                while (node != null) {
+                    argExprs.add(node.getExpr());
+                    node = node.getRest();
+                }
+            }
             String fname = call.getFuncName();
             if ("randomInt".equals(fname)) {
-                long bound = (long) evaluate(args.get(0), env);
-                return (long) random.nextInt((int) bound);
+                Q boundQ = evaluate(argExprs.get(0), env);
+                int bound = (int) ((IntValue) boundQ).get();
+                return new IntValue((long) random.nextInt(bound));
+            }else if("left".equals(fname)){
+                Q Qval = evaluate(call.getArgs().getList().getExpr(), env);
+                Ref ans = (Ref)Qval;
+                return ans.getLeft();
+            }else if("right".equals(fname)){
+                Q Qval = evaluate(call.getArgs().getList().getExpr(), env);
+                Ref ans = (Ref)Qval;
+                return ans.getRight();
+            }else if("isAtom".equals(fname)){
+                Q Qval = evaluate(call.getArgs().getList().getExpr(), env);
+                if(Qval instanceof IntValue || Qval instanceof NilRef){
+                    return new IntValue(1);
+                }else{
+                    return new IntValue(0);
+                }
+            }else if("isNil".equals(fname)){
+                Q Qval = evaluate(call.getArgs().getList().getExpr(), env);
+                if(Qval instanceof NilRef){
+                    return new IntValue(1);
+                }else{
+                    return new IntValue(0);
+                }
+            }else if("setLeft".equals(fname)){
+                Q Qsource = evaluate(call.getArgs().getList().getExpr(), env);
+                Ref source = (Ref) Qsource;
+                Q change = evaluate(call.getArgs().getList().getRest().getExpr(), env);
+                source.setLeft(change);
+                return new IntValue(1);
+            }else if("setRight".equals(fname)){
+                Q Qsource = evaluate(call.getArgs().getList().getExpr(), env);
+                Ref source = (Ref) Qsource;
+                Q change = evaluate(call.getArgs().getList().getRest().getExpr(), env);
+                source.setRight(change);
+                return new IntValue(1);
             }
             FuncDef fd = functions.get(fname);
             List<VarDecl> params = new ArrayList<>();
             FormalDeclList temp2 = fd.getParams();
             if (temp2 != null && temp2.getList() != null) {
                 NeFormalDeclList node = temp2.getList();
-                    while (node != null) {
+                while (node != null) {
                     params.add(node.getvar());
-                     node = node.getRest();
-                }      
-            }   
-            HashMap<String, Long> newEnv = new HashMap<>();
-            for (int i = 0; i < args.size(); i++) {
-                newEnv.put(params.get(i).getIdent(), (long)evaluate(args.get(i), env));
+                    node = node.getRest();
+                }
             }
-            return (long)executeStmt(fd.getBody(), newEnv);
+            HashMap<String, Q> newEnv = new HashMap<>();
+            for (int i = 0; i < argExprs.size(); i++) {
+                Q aval = evaluate(argExprs.get(i), env);
+                newEnv.put(params.get(i).getIdent(), aval);
+            }
 
-        }
+            Q result = executeStmt(fd.getBody(), newEnv);
+            return result;
+        } else if (expr instanceof NilExpr) {
+            return new NilRef();
+        } 
 
         throw new RuntimeException("Unhandled Expr type: " + expr.getClass().getName());
     }
-    boolean evaluate(ast.Condition cond, HashMap<String, Long> env) {
+
+    boolean evaluate(ast.Condition cond, HashMap<String, Q> env) {
         if (cond instanceof CompCond) {
             CompCond c = (CompCond) cond;
-            long left = ((long) evaluate(c.getLeftExpr(), env));
-            long right = ((long) evaluate(c.getRightExpr(), env));
+            Q leftQ = evaluate(c.getLeftExpr(), env);
+            Q rightQ = evaluate(c.getRightExpr(), env);
+            long left = ((IntValue) leftQ).get();
+            long right = ((IntValue) rightQ).get();
             switch (c.getOp()) {
                 case CompCond.EQ: return left == right;
                 case CompCond.GT: return left > right;
@@ -264,6 +354,19 @@ public class Interpreter {
             }
         }
         throw new RuntimeException("Unhandled Condition type: " + cond.getClass().getName());
+    }
+
+    private String valueToString(Q v) {
+        if (v instanceof IntValue){
+            return Long.toString(((IntValue) v).get());
+        } else if(v instanceof NilRef){
+            NilRef nil = (NilRef)v;
+            return nil.get_val();
+        }else if (v instanceof Ref) {
+            Ref obj = (Ref) v;
+            return "(" + valueToString(obj.getLeft()) + " . " + valueToString(obj.getRight()) + ")";
+        }
+        return v.toString();
     }
 
     public static void fatalError(String message, int processReturnCode) {
