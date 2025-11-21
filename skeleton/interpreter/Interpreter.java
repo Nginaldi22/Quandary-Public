@@ -27,8 +27,9 @@ public class Interpreter {
         public IntValue(long value) { 
             this.value = value; 
         }
-        public long get() { return value; }
-        @Override public String toString() { return Long.toString(value); }
+        public long get() { 
+            return value; 
+        }
     }
 
     private static class Ref extends Q {
@@ -242,8 +243,8 @@ public class Interpreter {
             }
         } else if (expr instanceof UnaryMinus) {
             UnaryMinus u = (UnaryMinus) expr;
-            Q v = evaluate(u.getExpr(), env);
-            return new IntValue(-((IntValue) v).get());
+            Q ans = evaluate(u.getExpr(), env);
+            return new IntValue(-((IntValue) ans).get());
         } else if (expr instanceof IdentExpr) {
             IdentExpr id = (IdentExpr) expr;
             String name = id.getVArName();
