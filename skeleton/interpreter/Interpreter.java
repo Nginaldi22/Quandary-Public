@@ -221,7 +221,27 @@ public class Interpreter {
         if (expr instanceof ConstExpr) {
             Object val = ((ConstExpr) expr).getValue();
             return new IntValue((long) val);
-        } else if (expr instanceof BinaryExpr) {
+        } else if (expr instanceof ParallelExpr){
+            BinaryExpr b = ((ParallelExpr)expr).getB_Expr();
+             int op = b.getOperator();
+            if (op == BinaryExpr.DOT) {
+                Q leftVal = evaluate(b.getLeftExpr(), env);
+                Q rightVal = evaluate(b.getRightExpr(), env);
+                Ref obj = new Ref(leftVal, rightVal);
+                return obj;
+            } else {
+                Q leftQ = evaluate(b.getLeftExpr(), env);
+                Q rightQ = evaluate(b.getRightExpr(), env);
+                long l = ((IntValue) leftQ).get();
+                long r = ((IntValue) rightQ).get();
+                switch (op) {
+                    case BinaryExpr.PLUS: return new IntValue(l + r);
+                    case BinaryExpr.MINUS: return new IntValue(l - r);
+                    case BinaryExpr.MULT: return new IntValue(l * r);
+                    default: throw new RuntimeException("Unhandled binary operator: " + op);
+                }
+            }
+        }else if (expr instanceof BinaryExpr) {
             BinaryExpr b = (BinaryExpr) expr;
             int op = b.getOperator();
             if (op == BinaryExpr.DOT) {
@@ -299,6 +319,10 @@ public class Interpreter {
                 Q change = evaluate(call.getArgs().getList().getRest().getExpr(), env);
                 source.setRight(change);
                 return new IntValue(1);
+            }else if("rel".equals(fname)){
+                return new IntValue(0);
+            }else if("acq".equals(fname)){
+                return new IntValue(0);
             }
             FuncDef fd = functions.get(fname);
             List<VarDecl> params = new ArrayList<>();
@@ -325,7 +349,7 @@ public class Interpreter {
         throw new RuntimeException("Unhandled Expr type: " + expr.getClass().getName());
     }
 
-    boolean evaluate(ast.Condition cond, HashMap<String, Q> env) {
+    boolean evaluate(Condition cond, HashMap<String, Q> env) {
         if (cond instanceof CompCond) {
             CompCond c = (CompCond) cond;
             Q leftQ = evaluate(c.getLeftExpr(), env);

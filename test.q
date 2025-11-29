@@ -1,11 +1,5 @@
 int main(int i){
-    mutable int x =0;
-    Ref a = 7.2;
-    while(x<5){
-        if(0<(int)left(a)){
-            x=x+1;
-        }
-        print x;
-    }
-    return 0;
+    Ref temp = 7.(5.nil);
+    Ref temp2 = 3.1;
+    return (int)left((Ref)right(temp)) + (int)left(temp2);
 }

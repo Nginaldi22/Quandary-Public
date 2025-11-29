@@ -94,6 +94,8 @@ white_space = {new_line} | [ \t\f]
 "nil"          {return symbol("nil", NIL);}
 "Q"            {return symbol("Q", Q);}
 "."            {return symbol(".", DOT);}
+"["            {return symbol("[", L_BRACE);}
+"]"            {return symbol("]", R_BRACE);}
 {IDENT}      {return symbol("IDENT", IDENT, yytext());}
 
 

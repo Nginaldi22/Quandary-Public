@@ -28,7 +28,7 @@ parser code {:
 :};
 
 terminal PLUS, MULT, MINUS, LPAREN, RPAREN, RETURN, SEMI_COLON, RIGHT_CURL, LEFT_CURL, INT, PRINT, IF, ELSE,LT, GT, 
-NOT, EQ, LE, GE, AND, OR, NE,ASSIGN,COMMA, WHILE, MUTABLE, REF, Q, NIL, DOT;
+NOT, EQ, LE, GE, AND, OR, NE,ASSIGN,COMMA, WHILE, MUTABLE, REF, Q, NIL, DOT,L_BRACE,R_BRACE;
 terminal Long    INTCONST;
 terminal String IDENT;
 terminal  UMINUS;
@@ -148,7 +148,8 @@ expr ::=
   {: RESULT = new NilExpr(); :}
   | LPAREN type: t RPAREN expr: e 
   {:RESULT = e;:}
-
+  | L_BRACE binaryExpr: e R_BRACE
+  {: RESULT = new ParallelExpr(loc(eleft,eright),e); :}
   ;
 
   exprList ::=
