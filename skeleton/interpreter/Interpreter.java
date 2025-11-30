@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.atomic.AtomicInteger;
 import parser.ParserWrapper;
 import ast.*;
 
@@ -31,11 +32,28 @@ public class Interpreter {
             return value; 
         }
     }
+    public class my_thread extends Thread{
+        private Expr expr;
+        private Q ans;
+        private HashMap<String, Q> env;
+        public my_thread(Expr e, HashMap<String, Q> env){
+            super();
+            this.expr=e;
+            this.env=env;
+        }
+        @Override
+        public void run(){
+            ans = evaluate(expr, env);
+        }
+        public Q get_ans(){
+            return ans;
+        }
+    }
 
     private static class Ref extends Q {
         private Q left;
         private Q right;
-         
+        private final AtomicInteger lock = new AtomicInteger(0);
         public Ref(Q left, Q right) {
              this.left = left; this.right = right; 
         }
@@ -52,6 +70,9 @@ public class Interpreter {
         public void setRight(Q val){
             this.right=val;
         }
+        public AtomicInteger getLock() { 
+            return lock; 
+        }
         
     }
     public static class NilRef extends Q{
@@ -66,7 +87,6 @@ public class Interpreter {
 
     static private Interpreter interpreter;
     HashMap<String, FuncDef> functions = new HashMap<>();
-
     public static Interpreter getInterpreter() {
         return interpreter;
     }
@@ -222,23 +242,30 @@ public class Interpreter {
             Object val = ((ConstExpr) expr).getValue();
             return new IntValue((long) val);
         } else if (expr instanceof ParallelExpr){
-            BinaryExpr b = ((ParallelExpr)expr).getB_Expr();
-             int op = b.getOperator();
-            if (op == BinaryExpr.DOT) {
-                Q leftVal = evaluate(b.getLeftExpr(), env);
-                Q rightVal = evaluate(b.getRightExpr(), env);
-                Ref obj = new Ref(leftVal, rightVal);
+            BinaryExpr b = ((ParallelExpr) expr).getB_Expr();
+            my_thread t1 = new my_thread(b.getLeftExpr(), env);
+            my_thread t2 = new my_thread(b.getRightExpr(), env);
+            t1.start();
+            t2.start();
+            try{
+                t1.join();
+                t2.join();
+            }catch(InterruptedException ex){
+                throw new RuntimeException("Thread inturrupted");
+            }
+            if (b.getOperator() == BinaryExpr.DOT) {
+                Ref obj = new Ref(t1.get_ans(), t2.get_ans());
                 return obj;
             } else {
-                Q leftQ = evaluate(b.getLeftExpr(), env);
-                Q rightQ = evaluate(b.getRightExpr(), env);
+                Q leftQ = t1.get_ans();
+                Q rightQ = t2.get_ans();
                 long l = ((IntValue) leftQ).get();
                 long r = ((IntValue) rightQ).get();
-                switch (op) {
+                switch (b.getOperator()) {
                     case BinaryExpr.PLUS: return new IntValue(l + r);
                     case BinaryExpr.MINUS: return new IntValue(l - r);
                     case BinaryExpr.MULT: return new IntValue(l * r);
-                    default: throw new RuntimeException("Unhandled binary operator: " + op);
+                    default: throw new RuntimeException("Unhandled binary operator: " + b.getOperator());
                 }
             }
         }else if (expr instanceof BinaryExpr) {
@@ -320,8 +347,16 @@ public class Interpreter {
                 source.setRight(change);
                 return new IntValue(1);
             }else if("rel".equals(fname)){
+                Q argQ = evaluate(call.getArgs().getList().getExpr(), env);
+                Ref target = (Ref) argQ;
+                target.getLock().set(0);
                 return new IntValue(0);
             }else if("acq".equals(fname)){
+                Q argQ = evaluate(call.getArgs().getList().getExpr(), env);
+                Ref target = (Ref) argQ;
+                while (!target.getLock().compareAndSet(0, 1)) {
+                 Thread.yield();
+                }
                 return new IntValue(0);
             }
             FuncDef fd = functions.get(fname);
@@ -398,4 +433,5 @@ public class Interpreter {
         System.out.println(message);
         System.exit(processReturnCode);
     }
+    
 }
